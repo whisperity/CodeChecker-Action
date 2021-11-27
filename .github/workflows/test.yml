@@ -8,11 +8,21 @@ on:
       - 'releases/*'
 
 jobs:
-  ubuntu_2004:
-    name: "Ubuntu Linux 20.04"
+  ubuntu_2004_latestllvm:
+    name: "Ubuntu Linux 20.04 (latest LLVM)"
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: ./
         with:
           version: "master"
+          llvm-version: "latest"
+  ubuntu_1804_12llvm:
+    name: "Ubuntu Linux 18.04 (LLVM 12.y)"
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./
+        with:
+          version: "master"
+          llvm-version: 12

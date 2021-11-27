@@ -6,14 +6,20 @@ Objective-C) using the [Clang](http://clang.llvm.org/) infrastructure and
 
 ## Overview
 
-:warning: **This action has been written with commands that target Ubuntu-based distributions!**
+⚠️ **CAUTION! This action has been written with commands that target Ubuntu-based distributions!**
+
+This single action composite script encompasses the following steps:
+
+  1. Obtain a package of the LLVM Clang suite's analysers, and CodeChecker.
+
 
 ## Action configuration
 
-### Installing versions
 
-| Variable     | Default                                                          | Description                                                |
-|--------------|------------------------------------------------------------------|
-| `repository` | [`Ericsson/CodeChecker`](http://github.com/Ericsson/CodeChecker) | The CodeChecker repository to check out and build          |
-| `version`    | `master`                                                         | The branch, tag, or commit SHA in the `repository` to use. |
+### Versions to install
 
+| Variable       | Default                                                          | Description                                                                                                                                                                                                    |
+|----------------|------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `repository`   | [`Ericsson/CodeChecker`](http://github.com/Ericsson/CodeChecker) | The CodeChecker repository to check out and build                                                                                                                                                              |
+| `version`      | `master`                                                         | The branch, tag, or commit SHA in the `repository` to use.                                                                                                                                                     |
+| `llvm-version` | `latest`                                                         | The major version of LLVM to install and use. LLVM is installed from [PPA](http://apt.llvm.org/). If `latest`, automatically gather the latest version. If `ignore`, don't install anything. (Not recommended) |
