@@ -1,16 +1,18 @@
 name: 'Action test'
 
 on:
+  pull_request:
   push:
     branches:
       - master
+      - 'releases/*'
 
 jobs:
   ubuntu_2004:
     name: "Ubuntu Linux 20.04"
     runs-on: ubuntu-20.04
     steps:
-      - name: "Test action"
-        uses: whisperity/codechecker-analysis-action@master
+      - uses: actions/checkout@v2
+      - uses: ./
         with:
-          version: "test"
+          version: "master"
