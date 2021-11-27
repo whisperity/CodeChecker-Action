@@ -1,0 +1,16 @@
+name: 'Action test'
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  ubuntu_2004:
+    name: "Ubuntu Linux 20.04"
+    runs-on: ubuntu-20.04
+    steps:
+      - name: "Test action"
+        uses: whisperity/codechecker-analysis-action@master
+        with:
+          version: "test"

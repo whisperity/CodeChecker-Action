@@ -1,0 +1,15 @@
+name: 'CodeChecker Static Analysis'
+author: 'Whisperity'
+description: 'Execute C/C++ static analysis of LLVM/Clang (Clang Static Analyzer and Clang-Tidy) driven via CodeChecker.'
+inputs:
+  version:
+    description: 'The version of the CodeChecker suite to obtain and execute. Might be a Git commit SHA, a branch name, or a tag.'
+    required: true
+    default: 'master'
+runs:
+  using: "composite"
+  steps:
+    - name: "Test"
+      run: |
+        echo "Foo"
+        echo ${{ inputs.version }}
