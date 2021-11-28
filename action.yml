@@ -19,6 +19,17 @@ inputs:
     required: true
     default: 'latest'
 
+  config:
+    description: 'The CodeChecker configuration JSON that contains for each CodeChecker action (analyze, parse, ...) the list of flags that should be appended to the invocation of the command.'
+    required: false
+
+  logfile:
+    description: 'The location of the JSON Compilation Database for the project. This file describes how the project is compiled, and thus how it should be analysed. Mutually exclusive with "build-command".'
+    required: false
+  build-command:
+    description: 'The build command to execute and log for the creation of a JSON Compilation Database. Mutually exclusive with "logfile".'
+    required: false
+
 runs:
   using: "composite"
   steps:
@@ -78,3 +89,13 @@ runs:
         echo "::set-output name=GITSEVEN::$(./build/CodeChecker/bin/CodeChecker analyzer-version | grep 'Git commit' | cut -d'|' -f 2 | cut -c 2-8)"
 
         popd
+    - name: "Prepare JSON Compilation Database"
+      env:
+        CODECHECKER_PATH: ${{ steps.codechecker.outputs.PATH }}
+
+        IN_LOGFILE: ${{ inputs.logfile }}
+        IN_COMMAND: ${{ inputs.build-command }}
+
+        OUT_FILE: ${{ github.workspace }}/codechecker_compilation_database.json
+      shell: bash
+      run: ${{ github.action_path }}/src/get-or-create-build-json.sh

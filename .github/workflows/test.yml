@@ -8,8 +8,10 @@ on:
       - 'releases/*'
 
 jobs:
-  ubuntu_2004_latestllvm:
-    name: "Ubuntu Linux 20.04 (latest LLVM)"
+  # Fetch tests do not produce results, but test the functionality of the
+  # "grab LLVM" and "grab and build CodeChecker" features.
+  fetch_ubuntu_2004_latestllvm:
+    name: "Fetch test: Ubuntu Linux 20.04 (latest LLVM)"
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -17,8 +19,9 @@ jobs:
         with:
           version: "master"
           llvm-version: "latest"
-  ubuntu_1804_12llvm:
-    name: "Ubuntu Linux 18.04 (LLVM 12.y)"
+          logfile: "test/empty/compile_commands.json"
+  fetch_ubuntu_1804_12llvm:
+    name: "Fetch test: Ubuntu Linux 18.04 (LLVM 12.y)"
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
@@ -26,3 +29,25 @@ jobs:
         with:
           version: "master"
           llvm-version: 12
+          logfile: "test/empty/compile_commands.json"
+
+  # Test simple build and analysis configuration.
+  simple_analysis_test:
+    strategy:
+      fail-fast: false
+      matrix:
+        logfile: ['', 'test/simple/compile_commands.json']
+        build-command: ['', 'cd test/simple; g++ -c main.cpp -o main.o']
+
+    name: "Simple analysis: (${{ matrix.logfile && 'logfile' || 'no-logfile' }} ${{ matrix.build-command && 'build-command' || 'no-build-command' }})"
+    runs-on: ubuntu-20.04
+
+    # Allow continuing the build, this step is "expected failure".
+    continue-on-error: ${{ (matrix.logfile != '') == (matrix.build-command != '') }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./
+        with:
+          logfile: ${{ matrix.logfile }}
+          build-command: ${{ matrix.build-command }}
