@@ -56,6 +56,9 @@ outputs:
   warnings:
     description: 'Whether the static analyser(s) reported any findings.'
     value: ${{ steps.parse.outputs.HAS_FINDINGS }}
+  result-log:
+    description: 'The file where the output of CodeChecker parse is written to verbatim.'
+    value: ${{ steps.parse.outputs.OUTPUT_LOG }}
   result-html-dir:
     description: 'The output directory where the user-friendly HTML reports were stored to.'
     value: ${{ steps.parse.outputs.HTML_DIR }}

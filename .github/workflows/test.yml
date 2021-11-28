@@ -82,9 +82,12 @@ jobs:
       - uses: actions/checkout@v2
       - run: test/fix_compile_json_paths.sh
       - uses: ./
+        id: codechecker
         with:
           logfile: 'test/ctu/compile_commands.json'
           ctu: true
+      - name: "Reject test if previous step did not produce CTU finding"
+        run: cat ${{ steps.codechecker.outputs.result-log }} | grep "Dereference of null pointer"
 
   fail-on-error:
     name: "Parse: Fail the build on error"

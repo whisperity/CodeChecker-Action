@@ -146,9 +146,10 @@ runs:
 
 The action exposes the following outputs which may be used in a workflow's steps succeeding the analysis.
 
-| Variable          | Value                                     | Description                                                                   |
-|-------------------|-------------------------------------------|-------------------------------------------------------------------------------|
-| `analyze-output`  | Auto-generated, or `analyze-output` input | The directory where the **raw** analysis output files are available.          |
-| `logfile`         | Auto-generated, or `logfile` input        | The JSON Compilation Database of the analysis that was executed.              |
-| `result-html-dir` | Auto-generated.                           | The directory where the **user-friendly HTML** bug reports were generated to. |
-| `warnings`        | `true` or `false`                         | Whether the static analysers reported any findings.                           |
+| Variable          | Value                                     | Description                                                                       |
+|-------------------|-------------------------------------------|-----------------------------------------------------------------------------------|
+| `analyze-output`  | Auto-generated, or `analyze-output` input | The directory where the **raw** analysis output files are available.              |
+| `logfile`         | Auto-generated, or `logfile` input        | The JSON Compilation Database of the analysis that was executed.                  |
+| `result-html-dir` | Auto-generated.                           | The directory where the **user-friendly HTML** bug reports were generated to.     |
+| `result-log`      | Auto-generated.                           | `CodeChecker parse`'s output log file which contains the findings dumped into it. |
+| `warnings`        | `true` or `false`                         | Whether the static analysers reported any findings.                               |

@@ -19,9 +19,8 @@ if [[ ! -z "$IN_CONFIGFILE" ]]; then
   echo "Using configuration file \"$IN_CONFIGFILE\"!"
 fi
 
-CTU_FLAG=$([[ "$IN_CTU" == "true" ]] && echo "--ctu --ctu-ast-mode load-from-pch" || echo "")
 if [[ "$IN_CTU" == "true" ]]; then
-  CTU_FLAG="--ctu --ctu-ast-mode load-from-pch"
+  CTU_FLAGS="--ctu --ctu-ast-mode load-from-pch"
   echo "::notice title=Cross Translation Unit analyis::CTU has been enabled, the analysis might take a long time!"
 fi
 
