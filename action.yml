@@ -39,6 +39,11 @@ inputs:
     default: 'false'
     required: true
 
+  fail-build-if-reports:
+    description: 'Whether to fail the build if static analysis warnings are emitted.'
+    default: 'false'
+    required: true
+
 outputs:
   logfile:
     description: 'The location of the JSON Compilation Database that was used for the analysis.'
@@ -47,6 +52,13 @@ outputs:
   analyze-output:
     description: 'The output directory where the raw analysis output was stored to.'
     value: ${{ steps.analyze.outputs.OUTPUT_DIR }}
+
+  warnings:
+    description: 'Whether the static analyser(s) reported any findings.'
+    value: ${{ steps.parse.outputs.HAS_FINDINGS }}
+  result-html-dir:
+    description: 'The output directory where the user-friendly HTML reports were stored to.'
+    value: ${{ steps.parse.outputs.HTML_DIR }}
 
 runs:
   using: "composite"
@@ -134,3 +146,23 @@ runs:
         IN_OUTPUT_DIR: ${{ inputs.analyze-output }}
       shell: bash
       run: ${{ github.action_path }}/src/execute-analysis.sh
+
+    - name: "Parse and convert results"
+      id: parse
+      env:
+        PROJECT_PATH: ${{ github.workspace }}
+        CODECHECKER_PATH: ${{ steps.codechecker.outputs.PATH }}
+        RAW_RESULT_DIR: ${{ steps.analyze.outputs.OUTPUT_DIR }}
+
+        IN_CONFIGFILE: ${{ inputs.config }}
+        IN_FAIL_IF_REPORTS: ${{ inputs.fail-build-if-reports }}
+        IN_OUTPUT_DIR: ${{ inputs.analyze-output }}
+      shell: bash
+      run: ${{ github.action_path }}/src/parse-results.sh
+
+    - name: "Fail the build if requested and warnings detected"
+      if: ${{ steps.parse.outputs.HAS_FINDINGS == 'true' && inputs.fail-build-if-reports == 'true' }}
+      shell: bash
+      run: |
+        echo "Static analysis reported warnings, and user requested build breaking."
+        exit 1

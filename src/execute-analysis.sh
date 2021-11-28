@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -x
 
 if [[ -z "$COMPILATION_DATABASE" ]]; then
   echo "::error title=Internal error::environment variable 'COMPILATION_DATABASE' missing!"
@@ -24,6 +24,10 @@ if [[ "$IN_CTU" == "true" ]]; then
   CTU_FLAG="--ctu --ctu-ast-mode load-from-pch"
   echo "::notice title=Cross Translation Unit analyis::CTU has been enabled, the analysis might take a long time!"
 fi
+
+"$CODECHECKER_PATH"/CodeChecker analyzers \
+  --detail \
+  || true
 
 # Note: Ignoring the result of the analyze command in CTU mode, as we do not
 # wish to break the build on a CTU failure.

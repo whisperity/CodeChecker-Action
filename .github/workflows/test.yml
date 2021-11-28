@@ -2,10 +2,14 @@ name: 'Action test'
 
 on:
   pull_request:
+    paths-ignore:
+      - '**.md'
   push:
     branches:
       - master
       - 'releases/*'
+    paths-ignore:
+      - '**.md'
 
 jobs:
   # Fetch tests do not produce results, but test the functionality of the
@@ -43,20 +47,26 @@ jobs:
     name: "Simple analysis: ${{ matrix.logfile && 'logfile' || 'no logfile' }}, ${{ matrix.build-command && 'build-command' || 'no build-command' }}, ${{ matrix.analyze-output && 'analyze-output' || 'no analyze-output'}}"
     runs-on: ubuntu-20.04
 
-    # Allow continuing the build, we check "expected failure" for misconfiguration.
-    continue-on-error: ${{ (matrix.logfile != '') == (matrix.build-command != '') }}
 
     steps:
       - uses: actions/checkout@v2
       - run: test/fix_compile_json_paths.sh
       - uses: ./
+        id: codechecker
+        # Allow continuing the build, we check "expected failure" for misconfiguration.
+        continue-on-error: ${{ (matrix.logfile != '') == (matrix.build-command != '') }}
         with:
           logfile: ${{ matrix.logfile }}
           build-command: ${{ matrix.build-command }}
           analyze-output: ${{ matrix.analyze-output }}
+      - name: "Reject test if previous step did not fail"
+        if: ${{ steps.codechecker.continue-on-error && steps.codechecker.outcome != 'failure' }}
+        run: |
+          echo "::error title=Step with expected failure passed::"
+          exit 1
 
-  analysis-cfg:
-    name: "Analysis: Custom configuration"
+  analyze-cfg:
+    name: "Analyze: Custom configuration"
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -65,8 +75,8 @@ jobs:
         with:
           config: 'test/codechecker.verbose.json'
           logfile: 'test/simple/compile_commands.json'
-  analysis-ctu:
-    name: "Analysis: CTU shortcut"
+  analyze-ctu:
+    name: "Analyze: CTU shortcut"
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -75,3 +85,36 @@ jobs:
         with:
           logfile: 'test/ctu/compile_commands.json'
           ctu: true
+
+  fail-on-error:
+    name: "Parse: Fail the build on error"
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: test/fix_compile_json_paths.sh
+      - uses: ./
+        id: codechecker
+        continue-on-error: true
+        with:
+          logfile: 'test/simple/compile_commands.json'
+          fail-build-if-reports: true
+      - name: "Reject test if previous step did not fail"
+        if: ${{ steps.codechecker.outcome != 'failure' }}
+        run: |
+          echo "::error title=fail-on-error test passed::Expected the 'parse' step to breka the build."
+          exit 1
+
+  parse-html:
+    name: "Parse: Generate and upload report HTML artefact"
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: test/fix_compile_json_paths.sh
+      - uses: ./
+        id: codechecker
+        with:
+          logfile: 'test/simple/compile_commands.json'
+      - uses: actions/upload-artifact@v2
+        with:
+          name: "Parse HTML test results"
+          path: ${{ steps.codechecker.outputs.result-html-dir }}

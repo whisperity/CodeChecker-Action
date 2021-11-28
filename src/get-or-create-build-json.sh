@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -x
 
 if [[ ! -z "$IN_LOGFILE" && ! -z "$IN_COMMAND" ]]; then
   echo "::error title=Configuration error::'logfile' and 'build-command' both specified!"

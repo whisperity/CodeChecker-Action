@@ -13,6 +13,7 @@ This single action composite script encompasses the following steps:
   1. Obtain a package of the LLVM Clang suite's analysers, and CodeChecker.
   2. _(Optional)_ Log the build commands to prepare for analysis.
   3. Execute the analysis.
+  4. Show the analysis results in the CI log, and create HTML reports that can be uploaded as an artefact.
 
 ℹ️ **Note:** Static analysis can be a time-consuming process.
 It's recommended that the static analysis step is not sequential with the rest of a CI execution, but either runs as its own job in a workflow, or a completely distinct workflow altogether.
@@ -48,8 +49,15 @@ runs:
 
     # Run the analysis
     - uses: whisperity/codechecker-analysis-action
+      id: codechecker
       with:
         logfile: ${{ github.workspace }}/Build/compile_commands.json
+
+    # Upload the results to the CI.
+    - uses: actions/upload-artifact@v2
+      with:
+        name: "CodeChecker Bug Reports"
+        path: ${{ steps.codechecker.outputs.result-html-dir }}
 ```
 
 ### Projects that need to self-creating a *JSON Compilation Database* or require generated code
@@ -77,8 +85,15 @@ runs:
 
     # Run the analysis
     - uses: whisperity/codechecker-analysis-action
+      id: codechecker
       with:
         build-command: "cd ${{ github.workspace }}/Build; cmake --build ."
+
+    # Upload the results to the CI.
+    - uses: actions/upload-artifact@v2
+      with:
+        name: "CodeChecker Bug Reports"
+        path: ${{ steps.codechecker.outputs.result-html-dir }}
 ```
 
 
@@ -115,12 +130,25 @@ runs:
 | `analyze-output` | (auto-generated) | The directory where the **raw** analysis output should be stored.                                                                                                                                                                                            |
 | `ctu`            | `false`          | Enable [Cross Translation Unit analysis](http://clang.llvm.org/docs/analyzer/user-docs/CrossTranslationUnit.html) in the _Clang Static Analyzer_. ⚠️ **CAUTION!** _CTU_ analysis might take a very long time, and CTU is officially regarded as experimental. |
 
+### Report configuration
+
+🔖 Read more about [`CodeChecker parse`](http://codechecker.readthedocs.io/en/latest/analyzer/user_guide/#parse) in the official documentation.
+
+ℹ️ **Note:** Due to static analysis being potentially noisy and the reports being unwieldy to fix, the default behaviour is to only report the findings but do not break the CI.
+
+
+| Variable                | Default | Description                                                                       |
+|-------------------------|---------|-----------------------------------------------------------------------------------|
+| `fail-build-if-reports` | `false` | If set to `true`, the build will be set to broken if the static analysers report. |
+
 
 ## Action *`outputs`* to use in further steps
 
 The action exposes the following outputs which may be used in a workflow's steps succeeding the analysis.
 
-| Variable         | Value                                     | Description                                                          |
-|------------------|-------------------------------------------|----------------------------------------------------------------------|
-| `logfile`        | Auto-generated, or `logfile` input        | The JSON Compilation Database of the analysis that was executed.     |
-| `analyze-output` | Auto-generated, or `analyze-output` input | The directory where the **raw** analysis output files are available. |
+| Variable          | Value                                     | Description                                                                   |
+|-------------------|-------------------------------------------|-------------------------------------------------------------------------------|
+| `analyze-output`  | Auto-generated, or `analyze-output` input | The directory where the **raw** analysis output files are available.          |
+| `logfile`         | Auto-generated, or `logfile` input        | The JSON Compilation Database of the analysis that was executed.              |
+| `result-html-dir` | Auto-generated.                           | The directory where the **user-friendly HTML** bug reports were generated to. |
+| `warnings`        | `true` or `false`                         | Whether the static analysers reported any findings.                           |
