@@ -59,7 +59,7 @@ jobs:
           logfile: ${{ matrix.logfile }}
           build-command: ${{ matrix.build-command }}
           analyze-output: ${{ matrix.analyze-output }}
-      - name: "Reject test if previous step did not fail"
+      - name: "Check and reject job if previous test should have failed, but did not"
         if: ${{ steps.codechecker.continue-on-error && steps.codechecker.outcome != 'failure' }}
         run: |
           echo "::error title=Step with expected failure passed::"

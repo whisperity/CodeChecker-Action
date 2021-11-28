@@ -44,10 +44,6 @@ echo "::set-output name=OUTPUT_LOG::$OUTPUT_LOG"
 if [[ "$EXIT_CODE" == "2" ]]; then
   echo "::set-output name=HAS_FINDINGS::true"
 
-  if [[ "$IN_FAIL_IF_REPORTS" == "true" ]]; then
-    echo "::notice title=Static analysis suppressed::CodeChecker static analyser found bug reports, but the build job is configured to suppress it."
-  fi
-
   # Let the jobs continue. If there were failures, the action script will break
   # the build in a later step. (After a potential upload to server.)
   EXIT_CODE=0
