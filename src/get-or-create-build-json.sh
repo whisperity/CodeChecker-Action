@@ -6,19 +6,24 @@ if [[ ! -z "$IN_LOGFILE" && ! -z "$IN_COMMAND" ]]; then
   exit 1
 fi
 
+mkdir -pv $(dirname "$OUT_FILE")
+
+EXIT_CODE=0
+
 if [[ ! -z "$IN_LOGFILE" ]]; then
   # Pretty trivial.
   cp -v "$IN_LOGFILE" "$OUT_FILE"
-  exit $?
-fi
-
-if [[ ! -z "$IN_COMMAND" ]]; then
+  EXIT_CODE=$?
+elif [[ ! -z "$IN_COMMAND" ]]; then
   "$CODECHECKER_PATH"/CodeChecker log \
     --build "$IN_COMMAND" \
     --output "$OUT_FILE"
-  exit $?
+  EXIT_CODE=$?
+else
+  echo "::error title=Configuration error::neither 'logfile' nor 'build-command' specified!"
+  echo "[]" > "$OUT_FILE"
+  exit 1
 fi
 
-echo "::error title=Configuration error::neither 'logfile' nor 'build-command' specified!"
-echo "[]" > "$OUT_FILE"
-exit 1
+echo "::set-output name=COMPILATION_DATABASE::$OUT_FILE"
+exit $EXIT_CODE

@@ -10,8 +10,8 @@ on:
 jobs:
   # Fetch tests do not produce results, but test the functionality of the
   # "grab LLVM" and "grab and build CodeChecker" features.
-  fetch_ubuntu_2004_latestllvm:
-    name: "Fetch test: Ubuntu Linux 20.04 (latest LLVM)"
+  fetch_ubuntu-2004_latest-llvm:
+    name: "Fetch: Ubuntu Linux 20.04 (latest LLVM)"
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -20,8 +20,8 @@ jobs:
           version: "master"
           llvm-version: "latest"
           logfile: "test/empty/compile_commands.json"
-  fetch_ubuntu_1804_12llvm:
-    name: "Fetch test: Ubuntu Linux 18.04 (LLVM 12.y)"
+  fetch_ubuntu-1804_12-llvm:
+    name: "Fetch: Ubuntu Linux 18.04 (LLVM 12.y)"
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
@@ -32,22 +32,46 @@ jobs:
           logfile: "test/empty/compile_commands.json"
 
   # Test simple build and analysis configuration.
-  simple_analysis_test:
+  simple-analysis-tests:
     strategy:
       fail-fast: false
       matrix:
         logfile: ['', 'test/simple/compile_commands.json']
         build-command: ['', 'cd test/simple; g++ -c main.cpp -o main.o']
+        analyze-output: ['', 'my-output-dir']
 
-    name: "Simple analysis: (${{ matrix.logfile && 'logfile' || 'no-logfile' }} ${{ matrix.build-command && 'build-command' || 'no-build-command' }})"
+    name: "Simple analysis: ${{ matrix.logfile && 'logfile' || 'no logfile' }}, ${{ matrix.build-command && 'build-command' || 'no build-command' }}, ${{ matrix.analyze-output && 'analyze-output' || 'no analyze-output'}}"
     runs-on: ubuntu-20.04
 
-    # Allow continuing the build, this step is "expected failure".
+    # Allow continuing the build, we check "expected failure" for misconfiguration.
     continue-on-error: ${{ (matrix.logfile != '') == (matrix.build-command != '') }}
 
     steps:
       - uses: actions/checkout@v2
+      - run: test/fix_compile_json_paths.sh
       - uses: ./
         with:
           logfile: ${{ matrix.logfile }}
           build-command: ${{ matrix.build-command }}
+          analyze-output: ${{ matrix.analyze-output }}
+
+  analysis-cfg:
+    name: "Analysis: Custom configuration"
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: test/fix_compile_json_paths.sh
+      - uses: ./
+        with:
+          config: 'test/codechecker.verbose.json'
+          logfile: 'test/simple/compile_commands.json'
+  analysis-ctu:
+    name: "Analysis: CTU shortcut"
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: test/fix_compile_json_paths.sh
+      - uses: ./
+        with:
+          logfile: 'test/ctu/compile_commands.json'
+          ctu: true

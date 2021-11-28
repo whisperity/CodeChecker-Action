@@ -3,5 +3,10 @@
     "directory": "__DIRECTORY__",
     "command": "g++ -c main.cpp -o main.o",
     "file": "main.cpp"
+  },
+  {
+    "directory": "__DIRECTORY__",
+    "command": "g++ -c lib.cpp -o lib.o",
+    "file": "lib.cpp"
   }
 ]

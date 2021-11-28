@@ -30,6 +30,24 @@ inputs:
     description: 'The build command to execute and log for the creation of a JSON Compilation Database. Mutually exclusive with "logfile".'
     required: false
 
+  analyze-output:
+    description: 'The output directory where the raw analysis output should be stored. If left the default empty, the path will be generated automatically.'
+    default: ''
+    required: false
+  ctu:
+    description: 'Whether to enable Cross Translation Unit (CTU) analysis in the Clang Static Analyzer.'
+    default: 'false'
+    required: true
+
+outputs:
+  logfile:
+    description: 'The location of the JSON Compilation Database that was used for the analysis.'
+    value: ${{ steps.log.outputs.COMPILATION_DATABASE }}
+
+  analyze-output:
+    description: 'The output directory where the raw analysis output was stored to.'
+    value: ${{ steps.analyze.outputs.OUTPUT_DIR }}
+
 runs:
   using: "composite"
   steps:
@@ -59,7 +77,7 @@ runs:
     - name: "Build and Package CodeChecker"
       id: codechecker
       env:
-        CODECHECKER_WILL_USE_WEB_API: false  # TODO: Add support for this later.
+        CODECHECKER_WILL_USE_WEB_API: "false"  # TODO: Add support for this later.
       shell: bash
       run: |
         set -ex
@@ -89,13 +107,30 @@ runs:
         echo "::set-output name=GITSEVEN::$(./build/CodeChecker/bin/CodeChecker analyzer-version | grep 'Git commit' | cut -d'|' -f 2 | cut -c 2-8)"
 
         popd
+
     - name: "Prepare JSON Compilation Database"
+      id: log
       env:
+        ACTION_NAME: ${{ github.action }}
         CODECHECKER_PATH: ${{ steps.codechecker.outputs.PATH }}
 
         IN_LOGFILE: ${{ inputs.logfile }}
         IN_COMMAND: ${{ inputs.build-command }}
 
-        OUT_FILE: ${{ github.workspace }}/codechecker_compilation_database.json
+        OUT_FILE: ${{ github.workspace }}/${{ github.action }}_codechecker_compilation_database.json
       shell: bash
       run: ${{ github.action_path }}/src/get-or-create-build-json.sh
+
+    - name: "Execute static analysis"
+      id: analyze
+      env:
+        ACTION_NAME: ${{ github.action }}
+        CODECHECKER_PATH: ${{ steps.codechecker.outputs.PATH }}
+        COMPILATION_DATABASE: ${{ steps.log.outputs.COMPILATION_DATABASE }}
+
+        IN_CONFIGFILE: ${{ inputs.config }}
+        IN_CTU: ${{ inputs.ctu }}
+        IN_FLAGS: ${{ inputs.analyze-options }}
+        IN_OUTPUT_DIR: ${{ inputs.analyze-output }}
+      shell: bash
+      run: ${{ github.action_path }}/src/execute-analysis.sh
