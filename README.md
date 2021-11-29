@@ -13,7 +13,9 @@ This single action composite script encompasses the following steps:
   1. Obtain a package of the LLVM Clang suite's analysers, and CodeChecker.
   2. _(Optional)_ Log the build commands to prepare for analysis.
   3. Execute the analysis.
-  4. Show the analysis results in the CI log, and create HTML reports that can be uploaded as an artefact.
+  4. Show the analysis results in the CI log, and create HTML reports that can be uploaded as an artefact. (Uploading is to be done by the user!)
+  5. _(Optional)_ Upload the results to a running _CodeChecker server_.
+
 
 ℹ️ **Note:** Static analysis can be a time-consuming process.
 It's recommended that the static analysis step is not sequential with the rest of a CI execution, but either runs as its own job in a workflow, or a completely distinct workflow altogether.
