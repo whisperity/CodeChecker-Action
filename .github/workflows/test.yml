@@ -110,6 +110,10 @@ jobs:
         with:
           logfile: 'test/simple/compile_commands.json'
           fail-build-if-reports: true
+          # FIXME: 6.18 release on PyPI is broken when it comes to the "parse"
+          # command. See Ericsson/CodeChecker#3515.
+          install-custom: true
+          version: "v6.18.0"
       - name: "Reject test if previous step did not fail"
         if: ${{ steps.codechecker.outcome != 'failure' }}
         run: |
@@ -126,10 +130,15 @@ jobs:
         id: codechecker
         with:
           logfile: 'test/simple/compile_commands.json'
+          # FIXME: 6.18 release on PyPI is broken when it comes to the "parse"
+          # command. See Ericsson/CodeChecker#3515.
+          install-custom: true
+          version: "v6.18.0"
       - uses: actions/upload-artifact@v2
         with:
           name: "Parse HTML test results"
           path: ${{ steps.codechecker.outputs.result-html-dir }}
+          if-no-files-found: error
 
   store:
     name: "Store: Authenticated local store of single result"
