@@ -1,4 +1,4 @@
-# [CodeChecker](http://github.com/Ericsson/CodeChecker/) C++ static analysis action
+# [CodeChecker](http://github.com/Ericsson/CodeChecker/) C++ Static Analysis action
 
 GitHub Action to execute static analysis over C-family projects (C, C++,
 Objective-C) using the [Clang](http://clang.llvm.org/) infrastructure and
@@ -26,7 +26,7 @@ Hence, it's recommended to configure your project in a **`Debug`** configuration
 Add the job into your CI as follows.
 The two versions are mutually exclusive &mdash; you either can give a compilation database, or you instruct CodeChecker to create one.
 
-### Project can generate a [JSON Compilation Database](http://clang.llvm.org/docs/JSONCompilationDatabase.html) and build cleanly (no generated code)
+### Projects that can generate a [JSON Compilation Database](http://clang.llvm.org/docs/JSONCompilationDatabase.html) and build cleanly (no generated code)
 
 Some projects are trivial enough in their build configuration that no additional steps need to be taken after executing `configure.sh`, `cmake`, or similar tools.
 If you are able to generate a _compilation database_ from your build system **without** running the build itself, you can save some time, and go to the analysis immediately.
@@ -137,19 +137,33 @@ runs:
 ℹ️ **Note:** Due to static analysis being potentially noisy and the reports being unwieldy to fix, the default behaviour is to only report the findings but do not break the CI.
 
 
-| Variable                | Default | Description                                                                       |
-|-------------------------|---------|-----------------------------------------------------------------------------------|
-| `fail-build-if-reports` | `false` | If set to `true`, the build will be set to broken if the static analysers report. |
+| Variable                | Default | Description                                                                                       |
+|-------------------------|---------|---------------------------------------------------------------------------------------------------|
+| `fail-build-if-reports` | `false` | If set to `true`, the build will be set to broken if the static analysers reports _any_ findings. |
 
+### Store settings
+
+🔖 Read more about [`CodeChecker store`](http://codechecker.readthedocs.io/en/latest/web/user_guide/#store) in the official documentation.
+
+
+
+| Variable         | Default                                                 | Description                                                                                                                                                                                                                                                                                                                     |
+|------------------|---------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `store`          | `false`                                                 | If set to `true`, the script will upload the findings to a CodeChecker server. Usually, other flags need to be configured too!                                                                                                                                                                                                  |
+| `store-url`      |                                                         | The URL of the CodeChecker product to store to, **including** the [endpoint](http://codechecker.readthedocs.io/en/latest/web/user_guide/#product_url-format). Usually in the format of `http://example.com/ProductName`. Specifying this variable is **required** if `store` was set to `true`.                                 |
+| `store-username` |                                                         | If the server requires authentication to access, specify the username which the upload should log in with.                                                                                                                                                                                                                      |
+| `store-password` |                                                         | The password or [generated access token](http://codechecker.readthedocs.io/en/latest/web/authentication/#personal-access-token) corresponding to the user. 🔐 **Note:** It is recommended that this is configured as a repository secret, and given as such: `${{ secrets.CODECHECKER_PASSWORD }}` when configuring the action. |
+| `store-run-name` | (auto-generated, in the format `user/repo: branchname`) | CodeChecker analysis executions are collected into _runs_. A run usually correlates to one configuration of the analysis. Runs can be stored incrementally, in which case CodeChecker is able to annotate that reports got fixed.                                                                                               |
 
 ## Action *`outputs`* to use in further steps
 
 The action exposes the following outputs which may be used in a workflow's steps succeeding the analysis.
 
-| Variable          | Value                                     | Description                                                                       |
-|-------------------|-------------------------------------------|-----------------------------------------------------------------------------------|
-| `analyze-output`  | Auto-generated, or `analyze-output` input | The directory where the **raw** analysis output files are available.              |
-| `logfile`         | Auto-generated, or `logfile` input        | The JSON Compilation Database of the analysis that was executed.                  |
-| `result-html-dir` | Auto-generated.                           | The directory where the **user-friendly HTML** bug reports were generated to.     |
-| `result-log`      | Auto-generated.                           | `CodeChecker parse`'s output log file which contains the findings dumped into it. |
-| `warnings`        | `true` or `false`                         | Whether the static analysers reported any findings.                               |
+| Variable          | Value                                     | Description                                                                                  |
+|-------------------|-------------------------------------------|----------------------------------------------------------------------------------------------|
+| `analyze-output`  | Auto-generated, or `analyze-output` input | The directory where the **raw** analysis output files are available.                         |
+| `logfile`         | Auto-generated, or `logfile` input        | The JSON Compilation Database of the analysis that was executed.                             |
+| `result-html-dir` | Auto-generated.                           | The directory where the **user-friendly HTML** bug reports were generated to.                |
+| `result-log`      | Auto-generated.                           | `CodeChecker parse`'s output log file which contains the findings dumped into it.            |
+| `store-run-name`  | Auto-generated, or `store-run-name` input | The name of the analysis run (if `store` was enabled) to which the results were uploaded to. |
+| `warnings`        | `true` or `false`                         | Whether the static analysers reported any findings.                                          |

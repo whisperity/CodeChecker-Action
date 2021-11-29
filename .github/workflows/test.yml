@@ -121,3 +121,75 @@ jobs:
         with:
           name: "Parse HTML test results"
           path: ${{ steps.codechecker.outputs.result-html-dir }}
+
+  store:
+    name: "Store: Authenticated local store of single result"
+    runs-on: ubuntu-20.04
+    env:
+      CODECHECKER_VERSION: '6.18.0'
+    steps:
+      - uses: actions/checkout@v2
+      # Need to do this manually because the server for this test has to have
+      # authentication on, with a known username and password.
+      - name: "Set up CodeChecker server"
+        run: |
+          set -x
+
+          sudo apt-get -y update
+          sudo apt-get -y install --no-install-recommends \
+            netcat \
+            wget
+
+          mkdir -pv ~/codechecker-server-data
+          chmod 1777 ~/codechecker-server-data
+
+          cp test/codechecker.server.json ~/codechecker-server-data/server_config.json
+          test/prepare-docker-server.sh
+
+          echo "::group::CodeChecker server configuration"
+          cd ~/codechecker-server-data
+          chown 950:950 server_config.json && chmod 0600 server_config.json
+          chown 950:950 root.user && chmod 0600 root.user
+          ls -alh
+          cat docker-compose.yml
+          cat root.user
+          cat server_config.json
+          echo "::endgroup::"
+
+          docker-compose up -d
+
+          wget -qO- http://raw.githubusercontent.com/eficode/wait-for/v2.1.3/wait-for | sh -s -- --timeout=30 http://0.0.0.0:8001/ -- echo "CodeChecker up"
+
+          docker ps -a
+          echo "::group::CodeChecker server initial log output"
+          docker logs codechecker-server
+          echo "::endgroup::"
+      - run: test/fix_compile_json_paths.sh
+      - uses: ./
+        id: codechecker
+        continue-on-error: true
+        with:
+          version: "v${{ env.CODECHECKER_VERSION }}"
+          logfile: 'test/simple/compile_commands.json'
+          store: true
+          store-url: 'http://0.0.0.0:8001/Default'
+          store-username: 'root'
+          store-password: 'root'
+      - name: "Test if server logged store action"
+        id: test
+        continue-on-error: true
+        run: docker logs codechecker-server | grep "stored results"
+      - name: "Teardown CodeChecker server"
+        run: |
+          set -x
+
+          echo "::group::CodeChecker server log output"
+          docker logs codechecker-server
+          echo "::endgroup::"
+
+          cd ~/codechecker-server-data
+          docker-compose down
+          docker ps -a
+      - name: "Fail the build if the test execution failed"
+        if: ${{ steps.test.outcome == 'failure' || steps.codechecker.outcome == 'failure' }}
+        run: exit 1

@@ -44,6 +44,24 @@ inputs:
     default: 'false'
     required: true
 
+  store:
+    description: 'Whether to enable storing the results to a CodeChecker server. If enabled, other flags, such as `store-url` must also be set.'
+    default: 'false'
+    required: true
+  store-url:
+    description: 'The CodeChecker product URL (usually in the format of http://example.com/ProductName) where the store should connect to. Mandatory if `store` is true.'
+    required: false
+  store-username:
+    description: 'If the server requires authentication, the username to authenticate with.'
+    required: false
+  store-password:
+    description: 'The password (or generated private access token) corresponding to the user.'
+    required: false
+  store-run-name:
+    description: 'An identifying name of the analysis run. A run usually correlates to a set of configuration, e.g. analysis mode, branch, etc. If left default, the name is automatically generated from the current repository and branch name.'
+    default: '__DEFAULT__'
+    required: true
+
 outputs:
   logfile:
     description: 'The location of the JSON Compilation Database that was used for the analysis.'
@@ -62,6 +80,10 @@ outputs:
   result-html-dir:
     description: 'The output directory where the user-friendly HTML reports were stored to.'
     value: ${{ steps.parse.outputs.HTML_DIR }}
+
+  store-run-name:
+    description: 'The name of the analysis run that the results were uploaded to.'
+    value: ${{ steps.store-pre.outputs.RUN_NAME }}
 
 runs:
   using: "composite"
@@ -92,7 +114,7 @@ runs:
     - name: "Build and Package CodeChecker"
       id: codechecker
       env:
-        CODECHECKER_WILL_USE_WEB_API: "false"  # TODO: Add support for this later.
+        CODECHECKER_WILL_USE_WEB_API: ${{ inputs.store == 'true' }}
       shell: bash
       run: |
         set -ex
@@ -169,3 +191,34 @@ runs:
       run: |
         echo "Static analysis reported warnings, and user requested build breaking."
         exit 1
+
+    - name: "Generate the configuration for uploading results"
+      id: store-pre
+      if: ${{ inputs.store == 'true' }}
+      env:
+        IN_STORE_URL: ${{ inputs.store-url }}
+        IN_STORE_USERNAME: ${{ inputs.store-username }}
+        IN_STORE_PASSWORD: ${{ inputs.store-password }}
+        IN_STORE_RUN_NAME: ${{ inputs.store-run-name }}
+
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_REF_NAME: ${{ github.ref_name }}
+        GITHUB_REF_TYPE: ${{ github.ref_type }}
+        GITHUB_SHA: ${{ github.sha }}
+      shell: bash
+      run: ${{ github.action_path }}/src/store-pre.sh
+
+    - name: "Store analysis results to server"
+      id: store
+      if: ${{ steps.store-pre.outputs.STORE_CONFIGURED == 'true' }}
+      env:
+        PROJECT_PATH: ${{ github.workspace }}
+        CODECHECKER_PATH: ${{ steps.codechecker.outputs.PATH }}
+        CODECHECKER_STORE_RUN_NAME: ${{ steps.store-pre.outputs.RUN_NAME }}
+        CODECHECKER_STORE_RUN_TAG: ${{ steps.store-pre.outputs.RUN_TAG }}
+        RAW_RESULT_DIR: ${{ steps.analyze.outputs.OUTPUT_DIR }}
+
+        IN_CONFIGFILE: ${{ inputs.config }}
+        IN_STORE_URL: ${{ inputs.store-url }}
+      shell: bash
+      run: ${{ github.action_path }}/src/store.sh
