@@ -12,30 +12,39 @@ on:
       - '**.md'
 
 jobs:
-  # Fetch tests do not produce results, but test the functionality of the
-  # "grab LLVM" and "grab and build CodeChecker" features.
-  fetch_ubuntu-2004_latest-llvm:
-    name: "Fetch: Ubuntu Linux 20.04 (latest LLVM)"
-    runs-on: ubuntu-20.04
+  fetch-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-18.04
+            install-custom: true
+            version: v6.16.0
+            llvm-version: '12'
+          - os: ubuntu-20.04
+            install-custom: false
+            version: 6.17.0
+            llvm-version: '13'
+          - os: ubuntu-20.04
+            install-custom: true
+            version: master
+            llvm-version: 'latest'
+          - os: ubuntu-20.04
+            install-custom: false
+            version: master
+            llvm-version: 'latest'
+    name: "Fetch: ${{ matrix.os }}, LLVM ${{ matrix.llvm-version }}, ${{ matrix.install-custom && 'repository' || 'pip' }} ${{ matrix.version }}"
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - uses: ./
+        id: codechecker
         with:
-          version: "master"
-          llvm-version: "latest"
-          logfile: "test/empty/compile_commands.json"
-  fetch_ubuntu-1804_12-llvm:
-    name: "Fetch: Ubuntu Linux 18.04 (LLVM 12.y)"
-    runs-on: ubuntu-18.04
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./
-        with:
-          version: "master"
-          llvm-version: 12
+          install-custom: ${{ matrix.install-custom }}
+          version: ${{ matrix.version }}
+          llvm-version: ${{ matrix.llvm-version }}
           logfile: "test/empty/compile_commands.json"
 
-  # Test simple build and analysis configuration.
   simple-analysis-tests:
     strategy:
       fail-fast: false
@@ -169,7 +178,7 @@ jobs:
         id: codechecker
         continue-on-error: true
         with:
-          version: "v${{ env.CODECHECKER_VERSION }}"
+          version: "${{ env.CODECHECKER_VERSION }}"
           logfile: 'test/simple/compile_commands.json'
           store: true
           store-url: 'http://0.0.0.0:8001/Default'
@@ -179,7 +188,7 @@ jobs:
         id: test
         continue-on-error: true
         run: docker logs codechecker-server | grep "stored results"
-      - name: "Teardown CodeChecker server"
+      - name: "Tear down CodeChecker server"
         run: |
           set -x
 

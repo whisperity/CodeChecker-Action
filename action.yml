@@ -6,12 +6,16 @@ branding:
   color: 'blue'
 
 inputs:
+  install-custom:
+    description: 'Whether to download, check out, and build a CodeChecker package manually in the CI.'
+    required: true
+    default: 'false'
   repository:
     description: 'The CodeChecker repository to check out and build from.'
     required: true
     default: 'Ericsson/CodeChecker'
   version:
-    description: 'The version of the CodeChecker suite to obtain and execute. Might be a Git commit SHA, a branch name, or a tag.'
+    description: 'The version of the CodeChecker suite to obtain and execute. Might be a Git commit SHA, a branch name, or a tag if building a custom package, or a release version if downloading from PyPI. If "master" and downloading from PyPI, fetch the latest release.'
     required: true
     default: 'master'
   llvm-version:
@@ -32,24 +36,24 @@ inputs:
 
   analyze-output:
     description: 'The output directory where the raw analysis output should be stored. If left the default empty, the path will be generated automatically.'
-    default: ''
     required: false
+    default: ''
   ctu:
     description: 'Whether to enable Cross Translation Unit (CTU) analysis in the Clang Static Analyzer.'
-    default: 'false'
     required: true
+    default: 'false'
 
   fail-build-if-reports:
     description: 'Whether to fail the build if static analysis warnings are emitted.'
-    default: 'false'
     required: true
+    default: 'false'
 
   store:
-    description: 'Whether to enable storing the results to a CodeChecker server. If enabled, other flags, such as `store-url` must also be set.'
-    default: 'false'
+    description: 'Whether to enable storing the results to a CodeChecker server. If enabled, other flags, such as "store-url" must also be set.'
     required: true
+    default: 'false'
   store-url:
-    description: 'The CodeChecker product URL (usually in the format of http://example.com/ProductName) where the store should connect to. Mandatory if `store` is true.'
+    description: 'The CodeChecker product URL (usually in the format of http://example.com/ProductName) where the store should connect to. Mandatory if "store" is true.'
     required: false
   store-username:
     description: 'If the server requires authentication, the username to authenticate with.'
@@ -59,8 +63,8 @@ inputs:
     required: false
   store-run-name:
     description: 'An identifying name of the analysis run. A run usually correlates to a set of configuration, e.g. analysis mode, branch, etc. If left default, the name is automatically generated from the current repository and branch name.'
-    default: '__DEFAULT__'
     required: true
+    default: '__DEFAULT__'
 
 outputs:
   logfile:
@@ -90,60 +94,35 @@ runs:
   steps:
     - name: "Check out repository ${{ inputs.repository }}"
       uses: actions/checkout@v2
+      if: ${{ inputs.install-custom == 'true' }}
       with:
-        repository: ${{ inputs.repository }}
         path: CodeChecker
+        repository: ${{ inputs.repository }}
         ref: ${{ inputs.version }}
 
-    - name: "Install dependencies of CodeChecker"
-      shell: bash
-      run: |
-        sudo apt-get -qy update
-        ${{ github.action_path }}/src/apt-dependencies.sh
-
-    - name: "Install LLVM version"
+    - name: "Install LLVM (${{ inputs.llvm-version }})"
       id: llvm
       if: ${{ inputs.llvm-version != 'ignore' }}
       env:
-        CONFIGURED_LLVM_VERSION: ${{ inputs.llvm-version }}
+        IN_LLVM_VERSION: ${{ inputs.llvm-version }}
       shell: bash
-      run: |
-        ${{ github.action_path }}/src/get-llvm.sh
-        echo "::set-output name=REAL_VERSION::$(clang --version | head -n 1 | cut -d' ' -f4-)"
+      run: ${{ github.action_path }}/src/get-llvm.sh
 
     - name: "Build and Package CodeChecker"
       id: codechecker
       env:
         CODECHECKER_WILL_USE_WEB_API: ${{ inputs.store == 'true' }}
+
+        IN_INSTALL_CUSTOM: ${{ inputs.install-custom }}
+        IN_VERSION: ${{ inputs.version }}
       shell: bash
       run: |
-        set -ex
-        if [[ "$CODECHECKER_WILL_USE_WEB_API" == "false" ]]; then
-          # If the job is only running analysis, do not spend time with building the API stuff!
-          echo "Building only 'analyzer' module..."
-          pushd CodeChecker/analyzer
+        set -x
+        if [[ "$IN_INSTALL_CUSTOM" == "true" ]]; then
+          ${{ github.action_path }}/src/build-codechecker.sh
         else
-          echo "Building full CodeChecker package..."
-          pushd CodeChecker
+          ${{ github.action_path }}/src/pip-codechecker.sh
         fi
-
-        make venv
-        source venv/bin/activate
-        BUILD_UI_DIST=NO make standalone_package
-        deactivate
-
-        ./build/CodeChecker/bin/CodeChecker analyzer-version
-        if [[ "$CODECHECKER_WILL_USE_WEB_API" == "true" ]]; then
-          ./build/CodeChecker/bin/CodeChecker web-version
-        else
-          echo "CodeChecker 'web' package not built."
-        fi
-
-        echo "::set-output name=PATH::$(readlink -f ./build/CodeChecker/bin)"
-        echo "::set-output name=VERSION::$(./build/CodeChecker/bin/CodeChecker analyzer-version | grep 'Base package' | cut -d'|' -f 2 | tr -d ' ')"
-        echo "::set-output name=GITSEVEN::$(./build/CodeChecker/bin/CodeChecker analyzer-version | grep 'Git commit' | cut -d'|' -f 2 | cut -c 2-8)"
-
-        popd
 
     - name: "Prepare JSON Compilation Database"
       id: log
