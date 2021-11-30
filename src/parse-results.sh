@@ -41,14 +41,16 @@ EXIT_CODE=$?
 echo "::set-output name=OUTPUT_LOG::$OUTPUT_LOG"
 
 
-if [[ "$EXIT_CODE" == "2" ]]; then
+if [[ $EXIT_CODE == "2" ]]; then
   echo "::set-output name=HAS_FINDINGS::true"
 
-  # Let the jobs continue. If there were failures, the action script will break
+  # Let the jobs continue. If there were failures, the script may be breaking
   # the build in a later step. (After a potential upload to server.)
   EXIT_CODE=0
-else
+elif [[ $EXIT_CODE == 0 ]]; then
   echo "::set-output name=HAS_FINDINGS::false"
 fi
+
+# Exit code 1 is internal error of executing the step.
 
 exit $EXIT_CODE

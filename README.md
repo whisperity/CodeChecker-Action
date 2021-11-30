@@ -25,10 +25,12 @@ Please ensure that your project is completely configured for a build before exec
 ℹ️ **Note:** Static analysers can rely on additional information that is optimised out in a true release build.
 Hence, it's recommended to configure your project in a **`Debug`** configuration.
 
+### Specifying the project to analyse
+
 Add the job into your CI as follows.
 The two versions are mutually exclusive &mdash; you either can give a compilation database, or you instruct CodeChecker to create one.
 
-### Projects that can generate a [JSON Compilation Database](http://clang.llvm.org/docs/JSONCompilationDatabase.html) and build cleanly (no generated code)
+#### Projects that can generate a [JSON Compilation Database](http://clang.llvm.org/docs/JSONCompilationDatabase.html) and build cleanly (no generated code)
 
 Some projects are trivial enough in their build configuration that no additional steps need to be taken after executing `configure.sh`, `cmake`, or similar tools.
 If you are able to generate a _compilation database_ from your build system **without** running the build itself, you can save some time, and go to the analysis immediately.
@@ -62,7 +64,7 @@ runs:
         path: ${{ steps.codechecker.outputs.result-html-dir }}
 ```
 
-### Projects that need to self-creating a *JSON Compilation Database* or require generated code
+#### Projects that need to self-creating a *JSON Compilation Database* or require generated code
 
 Other kinds of projects might rely heavily on _generated code_.
 When looking at the source code of these projects **without** a build having been executed beforehand, they do not compile &mdash; as such, analysis cannot be executed either.
@@ -98,6 +100,83 @@ runs:
         path: ${{ steps.codechecker.outputs.result-html-dir }}
 ```
 
+### Breaking the build if there are static analysis warnings
+
+If requested, the _`warnings`_ output variable can be matched against to execute a step in the job which breaks the entire job if **any** static analysis warnings were emitted by the project.
+
+ℹ️ **Note:** Due to static analysis being potentially noisy and the reports being unwieldy to fix, the default behaviour and recommendation is to only report the findings but do not break the entire CI.
+
+To get the reports in a human-consumable form, they must be uploaded somewhere first, before the failure step fails the entire job!
+
+```yaml
+runs:
+  steps:
+    # Check YOUR project out!
+    - name: "Check out repository"
+      uses: actions/checkout@v2
+
+    # Prepare a build
+    - name: "Prepare build"
+      run: |
+        mkdir -pv Build
+        cd Build
+        cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF
+
+    # Run the analysis
+    - uses: whisperity/codechecker-analysis-action
+      id: codechecker
+      with:
+        build-command: "cd ${{ github.workspace }}/Build; cmake --build ."
+
+    # Upload the results to the CI.
+    - uses: actions/upload-artifact@v2
+      with:
+        name: "CodeChecker Bug Reports"
+        path: ${{ steps.codechecker.outputs.result-html-dir }}
+
+    # Break the build if there are *ANY* warnings emitted by the analysers.
+    - name: "Break build if CodeChecker reported any findings"
+      if: ${{ steps.codechecker.outputs.warnings == 'true' }}
+      run: exit 1
+```
+
+### Uploading results to a CodeChecker server
+
+If your project hosts a CodeChecker server somewhere, the job can be configured
+to automatically create or update a run.
+
+```yaml
+runs:
+  steps:
+    # Check YOUR project out!
+    - name: "Check out repository"
+      uses: actions/checkout@v2
+
+    # Prepare a build
+    - name: "Prepare build"
+      run: |
+        mkdir -pv Build
+        cd Build
+        cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF
+
+    # Run the analysis
+    - uses: whisperity/codechecker-analysis-action
+      id: codechecker
+      with:
+        build-command: "cd ${{ github.workspace }}/Build; cmake --build ."
+        store: true
+        store-url: 'http://example.com:8001/MyProject'
+        store-username: ${{ secrets.CODECHECKER_STORE_USER }}
+        store-password: ${{ secrets.CODECHECKER_STORE_PASSWORD }}
+
+    # Upload the results to the CI.
+    - uses: actions/upload-artifact@v2
+      with:
+        name: "CodeChecker Bug Reports"
+        path: ${{ steps.codechecker.outputs.result-html-dir }}
+```
+
+
 
 ## Action configuration
 
@@ -127,7 +206,6 @@ runs:
 
 🔖 Read more about [`CodeChecker analyze`](http://codechecker.readthedocs.io/en/latest/analyzer/user_guide/#analyze) in the official documentation.
 
-
 | Variable         | Default          | Description                                                                                                                                                                                                                                                  |
 |------------------|------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `analyze-output` | (auto-generated) | The directory where the **raw** analysis output should be stored.                                                                                                                                                                                            |
@@ -137,18 +215,9 @@ runs:
 
 🔖 Read more about [`CodeChecker parse`](http://codechecker.readthedocs.io/en/latest/analyzer/user_guide/#parse) in the official documentation.
 
-ℹ️ **Note:** Due to static analysis being potentially noisy and the reports being unwieldy to fix, the default behaviour is to only report the findings but do not break the CI.
-
-
-| Variable                | Default | Description                                                                                       |
-|-------------------------|---------|---------------------------------------------------------------------------------------------------|
-| `fail-build-if-reports` | `false` | If set to `true`, the build will be set to broken if the static analysers reports _any_ findings. |
-
 ### Store settings
 
 🔖 Read more about [`CodeChecker store`](http://codechecker.readthedocs.io/en/latest/web/user_guide/#store) in the official documentation.
-
-
 
 | Variable         | Default                                                 | Description                                                                                                                                                                                                                                                                                                                     |
 |------------------|---------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -162,11 +231,12 @@ runs:
 
 The action exposes the following outputs which may be used in a workflow's steps succeeding the analysis.
 
-| Variable          | Value                                     | Description                                                                                  |
-|-------------------|-------------------------------------------|----------------------------------------------------------------------------------------------|
-| `analyze-output`  | Auto-generated, or `analyze-output` input | The directory where the **raw** analysis output files are available.                         |
-| `logfile`         | Auto-generated, or `logfile` input        | The JSON Compilation Database of the analysis that was executed.                             |
-| `result-html-dir` | Auto-generated.                           | The directory where the **user-friendly HTML** bug reports were generated to.                |
-| `result-log`      | Auto-generated.                           | `CodeChecker parse`'s output log file which contains the findings dumped into it.            |
-| `store-run-name`  | Auto-generated, or `store-run-name` input | The name of the analysis run (if `store` was enabled) to which the results were uploaded to. |
-| `warnings`        | `true` or `false`                         | Whether the static analysers reported any findings.                                          |
+| Variable           | Value                                     | Description                                                                                                          |
+|--------------------|-------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| `analyze-output`   | Auto-generated, or `analyze-output` input | The directory where the **raw** analysis output files are available.                                                 |
+| `logfile`          | Auto-generated, or `logfile` input        | The JSON Compilation Database of the analysis that was executed.                                                     |
+| `result-html-dir`  | Auto-generated.                           | The directory where the **user-friendly HTML** bug reports were generated to.                                        |
+| `result-log`       | Auto-generated.                           | `CodeChecker parse`'s output log file which contains the findings dumped into it.                                    |
+| `store-run-name`   | Auto-generated, or `store-run-name` input | The name of the analysis run (if `store` was enabled) to which the results were uploaded to.                         |
+| `store-successful` | `true` or `false`                         | Whether storing the results succeeded. Useful for optionally breaking the build later to detect networking failures. |
+| `warnings`         | `true` or `false`                         | Whether the static analysers reported any findings.                                                                  |

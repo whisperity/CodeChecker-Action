@@ -98,8 +98,8 @@ jobs:
       - name: "Reject test if previous step did not produce CTU finding"
         run: cat ${{ steps.codechecker.outputs.result-log }} | grep "Dereference of null pointer"
 
-  fail-on-error:
-    name: "Parse: Fail the build on error"
+  reports-errors:
+    name: "Parse: Findings are reported"
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -109,15 +109,14 @@ jobs:
         continue-on-error: true
         with:
           logfile: 'test/simple/compile_commands.json'
-          fail-build-if-reports: true
           # FIXME: 6.18 release on PyPI is broken when it comes to the "parse"
           # command. See Ericsson/CodeChecker#3515.
           install-custom: true
           version: "v6.18.0"
-      - name: "Reject test if previous step did not fail"
-        if: ${{ steps.codechecker.outcome != 'failure' }}
+      - name: "Reject test if output isn't as expected"
+        if: ${{ steps.codechecker.outputs.warnings != 'true' }}
         run: |
-          echo "::error title=fail-on-error test passed::Expected the 'parse' step to breka the build."
+          echo "::error title=fail-on-error test passed::Expected the 'parse' step to report findings."
           exit 1
 
   parse-html:
@@ -209,5 +208,5 @@ jobs:
           docker-compose down
           docker ps -a
       - name: "Fail the build if the test execution failed"
-        if: ${{ steps.test.outcome == 'failure' || steps.codechecker.outcome == 'failure' }}
+        if: ${{ steps.test.outcome == 'failure' || steps.codechecker.outcome == 'failure' || steps.codechecker.outputs.store-successful != 'true' }}
         run: exit 1

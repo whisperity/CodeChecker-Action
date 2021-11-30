@@ -40,3 +40,15 @@ fi
   --trim-path-prefix "$PROJECT_PATH" \
   $RUN_TAG_FLAG_1 $RUN_TAG_FLAG_2 \
   $CONFIG_FLAG_1 $CONFIG_FLAG_2
+SUCCESS=$?
+
+if [[ $SUCCESS -ne 0 ]]; then
+  echo "::warning title=Storing results failed::Executing 'CodeChecker store' to upload analysis results to the server has failed. The logs usually provide more information."
+  echo "::set-output name=SUCCESS::false"
+else
+  echo "::set-output name=SUCCESS::true"
+fi
+
+# Always return 0 from this step. The user can decide if storage is mandatory
+# and break the build later.
+exit 0

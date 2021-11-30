@@ -43,11 +43,6 @@ inputs:
     required: true
     default: 'false'
 
-  fail-build-if-reports:
-    description: 'Whether to fail the build if static analysis warnings are emitted.'
-    required: true
-    default: 'false'
-
   store:
     description: 'Whether to enable storing the results to a CodeChecker server. If enabled, other flags, such as "store-url" must also be set.'
     required: true
@@ -88,6 +83,9 @@ outputs:
   store-run-name:
     description: 'The name of the analysis run that the results were uploaded to.'
     value: ${{ steps.store-pre.outputs.RUN_NAME }}
+  store-successful:
+    description: 'Whether storing the analysis results to the configured server was successful. Useful for breaking the build in a later step if the store action is deemed mandatory.'
+    value: ${{ steps.store.outputs.SUCCESS }}
 
 runs:
   using: "composite"
@@ -159,17 +157,9 @@ runs:
         RAW_RESULT_DIR: ${{ steps.analyze.outputs.OUTPUT_DIR }}
 
         IN_CONFIGFILE: ${{ inputs.config }}
-        IN_FAIL_IF_REPORTS: ${{ inputs.fail-build-if-reports }}
         IN_OUTPUT_DIR: ${{ inputs.analyze-output }}
       shell: bash
       run: ${{ github.action_path }}/src/parse-results.sh
-
-    - name: "Fail the build if requested and warnings detected"
-      if: ${{ steps.parse.outputs.HAS_FINDINGS == 'true' && inputs.fail-build-if-reports == 'true' }}
-      shell: bash
-      run: |
-        echo "Static analysis reported warnings, and user requested build breaking."
-        exit 1
 
     - name: "Generate the configuration for uploading results"
       id: store-pre
