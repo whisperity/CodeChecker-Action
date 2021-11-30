@@ -1,5 +1,9 @@
 #!/bin/bash
-set -x
+if [[ ! -z "$CODECHECKER_ACTION_DEBUG" ]]; then
+  set -x
+fi
+
+echo "::group::Preparing for store"
 
 if [[ -z "$IN_STORE_URL" ]]; then
   echo "::error title=Internal error::environment variable 'IN_STORE_URL' missing!"
@@ -31,7 +35,9 @@ if [[ ! -z "$CODECHECKER_STORE_RUN_TAG" ]]; then
   RUN_TAG_FLAG_1="--tag"
   RUN_TAG_FLAG_2=$CODECHECKER_STORE_RUN_TAG
 fi
+echo "::endgroup::"
 
+echo "::group::Storing results to server"
 "$CODECHECKER_PATH"/CodeChecker \
   store \
   "$RAW_RESULT_DIR" \
@@ -41,6 +47,7 @@ fi
   $RUN_TAG_FLAG_1 $RUN_TAG_FLAG_2 \
   $CONFIG_FLAG_1 $CONFIG_FLAG_2
 SUCCESS=$?
+echo "::endgroup::"
 
 if [[ $SUCCESS -ne 0 ]]; then
   echo "::warning title=Storing results failed::Executing 'CodeChecker store' to upload analysis results to the server has failed. The logs usually provide more information."

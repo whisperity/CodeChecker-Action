@@ -1,5 +1,10 @@
 #!/bin/bash
-set -ex
+set -e
+if [[ ! -z "$CODECHECKER_ACTION_DEBUG" ]]; then
+  set -x
+fi
+
+echo "::group::Installing LLVM"
 
 export DISTRO_FANCYNAME="$(lsb_release -c | awk '{ print $2 }')"
 curl -sL http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
@@ -20,6 +25,8 @@ sudo update-alternatives --install                   \
   /usr/bin/clang clang /usr/bin/clang-$LLVM_VER 1000 \
   --slave                                            \
     /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-$LLVM_VER
+echo "::endgroup::"
+
 update-alternatives --query clang
 
 echo "::set-output name=REAL_VERSION::$(clang --version | head -n 1 | cut -d' ' -f4-)"

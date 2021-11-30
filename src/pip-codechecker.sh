@@ -1,6 +1,9 @@
 #!/bin/bash
-set -x
+if [[ ! -z "$CODECHECKER_ACTION_DEBUG" ]]; then
+  set -x
+fi
 
+echo "::group::Installing CodeChecker for PyPI"
 if [[ "$IN_VERSION" == "master" ]]; then
   # The default branch name "master" is offered as a convenient shortcut for
   # fetching the latest release.
@@ -8,10 +11,10 @@ if [[ "$IN_VERSION" == "master" ]]; then
 else
   pip3 install codechecker=="$IN_VERSION"
 fi
-
 pip3 show codechecker
-which CodeChecker
+echo "::endgroup::"
 
+which CodeChecker
 CodeChecker analyzer-version
 CodeChecker web-version
 

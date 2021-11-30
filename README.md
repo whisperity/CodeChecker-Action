@@ -39,7 +39,7 @@ If you are able to generate a _compilation database_ from your build system **wi
 You can specify the generated compilation database in the `logfile` variable 
 
 ```yaml
-runs:
+job:
   steps:
     # Check YOUR project out!
     - name: "Check out repository"
@@ -53,7 +53,7 @@ runs:
         cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
     # Run the analysis
-    - uses: whisperity/codechecker-analysis-action
+    - uses: whisperity/codechecker-analysis-action@v1
       id: codechecker
       with:
         logfile: ${{ github.workspace }}/Build/compile_commands.json
@@ -75,7 +75,7 @@ In this case, you will need to instruct CodeChecker to log a build (and spend ti
 You can specify the build to execute in the `build-command` variable.
 
 ```yaml
-runs:
+job:
   steps:
     # Check YOUR project out!
     - name: "Check out repository"
@@ -89,7 +89,7 @@ runs:
         cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF
 
     # Run the analysis
-    - uses: whisperity/codechecker-analysis-action
+    - uses: whisperity/codechecker-analysis-action@v1
       id: codechecker
       with:
         build-command: "cd ${{ github.workspace }}/Build; cmake --build ."
@@ -110,7 +110,7 @@ If requested, the _`warnings`_ output variable can be matched against to execute
 To get the reports in a human-consumable form, they must be uploaded somewhere first, before the failure step fails the entire job!
 
 ```yaml
-runs:
+job:
   steps:
     # Check YOUR project out!
     - name: "Check out repository"
@@ -124,7 +124,7 @@ runs:
         cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF
 
     # Run the analysis
-    - uses: whisperity/codechecker-analysis-action
+    - uses: whisperity/codechecker-analysis-action@v1
       id: codechecker
       with:
         build-command: "cd ${{ github.workspace }}/Build; cmake --build ."
@@ -152,7 +152,7 @@ to automatically create or update a run.
 on:
   push:
 
-runs:
+job:
   steps:
     # Check YOUR project out!
     - name: "Check out repository"
@@ -166,7 +166,7 @@ runs:
         cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF
 
     # Run the analysis
-    - uses: whisperity/codechecker-analysis-action
+    - uses: whisperity/codechecker-analysis-action@v1
       id: codechecker
       with:
         build-command: "cd ${{ github.workspace }}/Build; cmake --build ."
@@ -175,12 +175,6 @@ runs:
         store-username: ${{ secrets.CODECHECKER_STORE_USER }}
         store-password: ${{ secrets.CODECHECKER_STORE_PASSWORD }}
         # store-run-name: "custom run name to store against"
-
-    # Upload the results to the CI.
-    - uses: actions/upload-artifact@v2
-      with:
-        name: "CodeChecker Bug Reports"
-        path: ${{ steps.codechecker.outputs.result-html-dir }}
 ```
 
 ### Acting as a CI gate on pull requests
@@ -210,7 +204,7 @@ runs:
         cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF
 
     # Run the analysis
-    - uses: whisperity/codechecker-analysis-action
+    - uses: whisperity/codechecker-analysis-action@v1
       id: codechecker
       with:
         build-command: "cd ${{ github.workspace }}/Build; cmake --build ."

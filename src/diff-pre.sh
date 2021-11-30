@@ -1,5 +1,7 @@
 #!/bin/bash
-set -x
+if [[ ! -z "$CODECHECKER_ACTION_DEBUG" ]]; then
+  set -x
+fi
 
 if [[ -z "$IN_DIFF_URL" ]]; then
   echo "::error title=Configuration error::Diffing results against a server was enabled, but the product URL is not configured."

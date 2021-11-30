@@ -1,5 +1,7 @@
 #!/bin/bash
-set -x
+if [[ ! -z "$CODECHECKER_ACTION_DEBUG" ]]; then
+  set -x
+fi
 
 if [[ -z "$IN_STORE_URL" ]]; then
   echo "::error title=Configuration error::Uploading results to a server was enabled, but the upload URL is not configured."

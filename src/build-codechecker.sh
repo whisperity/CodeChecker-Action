@@ -1,6 +1,11 @@
 #!/bin/bash
-set -ex
+set -e
 
+if [[ ! -z "$CODECHECKER_ACTION_DEBUG" ]]; then
+  set -x
+fi
+
+echo "::group::Installing CodeChecker dependencies"
 sudo apt-get -y update
 sudo apt-get -y --no-install-recommends install \
   build-essential \
@@ -8,7 +13,9 @@ sudo apt-get -y --no-install-recommends install \
   gcc-multilib \
   python3-dev \
   python3-venv
+echo "::endgroup::"
 
+echo "::group::Build CodeChecker locally"
 if [[ "$CODECHECKER_WILL_USE_WEB_API" == "false" ]]; then
   # If the job is only running analysis, do not spend time with building the API stuff!
   echo "Building only 'analyzer' module..."
@@ -22,6 +29,7 @@ make venv
 source venv/bin/activate
 BUILD_UI_DIST=NO make standalone_package
 deactivate
+echo "::endgroup::"
 
 ./build/CodeChecker/bin/CodeChecker analyzer-version
 if [[ "$CODECHECKER_WILL_USE_WEB_API" == "true" ]]; then

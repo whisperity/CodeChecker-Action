@@ -1,6 +1,9 @@
 #!/bin/bash
-set -x
+if [[ ! -z "$CODECHECKER_ACTION_DEBUG" ]]; then
+  set -x
+fi
 
+echo "::group::Preparing for parse"
 if [[ -z "$PROJECT_PATH" ]]; then
   echo "::error title=Internal error::environment variable 'PROJECT_PATH' missing!"
   exit 1
@@ -20,7 +23,9 @@ if [[ ! -z "$IN_CONFIGFILE" ]]; then
   CONFIG_FLAG_2=$IN_CONFIGFILE
   echo "Using configuration file \"$IN_CONFIGFILE\"!"
 fi
+echo "::endgroup::"
 
+echo "::group::Generating HTML results from analysis"
 "$CODECHECKER_PATH"/CodeChecker parse \
   "$RAW_RESULT_DIR" \
   --export "html" \
@@ -28,7 +33,9 @@ fi
   --trim-path-prefix "$PROJECT_PATH" \
   || true
 echo "::set-output name=HTML_DIR::$OUTPUT_DIR"
+echo "::endgroup::"
 
+echo "::group::Printing analysis results to log"
 "$CODECHECKER_PATH"/CodeChecker parse \
   "$RAW_RESULT_DIR" \
   --trim-path-prefix "$PROJECT_PATH" \
@@ -37,6 +44,7 @@ EXIT_CODE=$?
 
 cat "$OUTPUT_LOG"
 echo "::set-output name=OUTPUT_LOG::$OUTPUT_LOG"
+echo "::endgroup::"
 
 if [[ $EXIT_CODE -eq 2 ]]; then
   echo "::set-output name=HAS_FINDINGS::true"

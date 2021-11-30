@@ -1,6 +1,9 @@
 #!/bin/bash
-set -x
+if [[ ! -z "$CODECHECKER_ACTION_DEBUG" ]]; then
+  set -x
+fi
 
+echo "::group::Preparing for analysis"
 if [[ -z "$COMPILATION_DATABASE" ]]; then
   echo "::error title=Internal error::environment variable 'COMPILATION_DATABASE' missing!"
   exit 1
@@ -23,14 +26,15 @@ if [[ "$IN_CTU" == "true" ]]; then
   CTU_FLAGS="--ctu --ctu-ast-mode load-from-pch"
   echo "::notice title=Cross Translation Unit analyis::CTU has been enabled, the analysis might take a long time!"
 fi
+echo "::endgroup::"
 
 "$CODECHECKER_PATH"/CodeChecker analyzers \
   --detail \
   || true
 
+echo "::group::Executing Static Analysis"
 # Note: Ignoring the result of the analyze command in CTU mode, as we do not
 # wish to break the build on a CTU failure.
-
 "$CODECHECKER_PATH"/CodeChecker analyze \
     "$COMPILATION_DATABASE" \
     --output "$OUTPUT_DIR" \
@@ -39,6 +43,7 @@ fi
     $CTU_FLAGS \
   || [[ "$IN_CTU" == "true" ]]
 EXIT_CODE=$?
+echo "::endgroup::"
 
 echo "::set-output name=OUTPUT_DIR::$OUTPUT_DIR"
 exit $EXIT_CODE

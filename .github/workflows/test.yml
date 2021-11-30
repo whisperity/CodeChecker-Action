@@ -157,18 +157,22 @@ jobs:
         run: |
           set -x
 
+          echo "::group::Installing dependencies"
           sudo apt-get -y update
           sudo apt-get -y install --no-install-recommends \
             netcat \
             wget
+          echo "::endgroup::"
 
+          echo "::group::Setting up server configuration"
           mkdir -pv ~/codechecker-server-data
           chmod 1777 ~/codechecker-server-data
 
           cp test/codechecker.server.json ~/codechecker-server-data/server_config.json
           test/prepare-docker-server.sh
+          echo "::endgroup::"
 
-          echo "::group::CodeChecker server configuration"
+          echo "::group::Debug show CodeChecker server configuration"
           cd ~/codechecker-server-data
           chown 950:950 server_config.json && chmod 0600 server_config.json
           chown 950:950 root.user && chmod 0600 root.user
@@ -183,6 +187,7 @@ jobs:
           wget -qO- http://raw.githubusercontent.com/eficode/wait-for/v2.1.3/wait-for | sh -s -- --timeout=30 http://0.0.0.0:8001/ -- echo "CodeChecker up"
 
           docker ps -a
+
           echo "::group::CodeChecker server initial log output"
           docker logs codechecker-server
           echo "::endgroup::"
@@ -205,8 +210,6 @@ jobs:
         run: docker logs codechecker-server | grep "stored results"
       - name: "Tear down CodeChecker server"
         run: |
-          set -x
-
           echo "::group::CodeChecker server log output"
           docker logs codechecker-server
           echo "::endgroup::"
