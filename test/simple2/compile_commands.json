@@ -1,0 +1,7 @@
+[
+  {
+    "directory": "__DIRECTORY__",
+    "command": "g++ -c main.cpp -o main.o",
+    "file": "main.cpp"
+  }
+]

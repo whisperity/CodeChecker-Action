@@ -14,7 +14,8 @@ This single action composite script encompasses the following steps:
   2. _(Optional)_ Log the build commands to prepare for analysis.
   3. Execute the analysis.
   4. Show the analysis results in the CI log, and create HTML reports that can be uploaded as an artefact. (Uploading is to be done by the user!)
-  5. _(Optional)_ Upload the results to a running _CodeChecker server_.
+  5. _(Optional)_ Check for the current commit introducing new bug reports against a known state. (Good for pull requests!)
+  6. _(Optional)_ Upload the results to a running _CodeChecker server_. (Good for the main project!)
 
 
 ℹ️ **Note:** Static analysis can be a time-consuming process.
@@ -146,6 +147,11 @@ If your project hosts a CodeChecker server somewhere, the job can be configured
 to automatically create or update a run.
 
 ```yaml
+# It is recommended that storing only happens for PUSH events, and preferably
+# only for long-term branches.
+on:
+  push:
+
 runs:
   steps:
     # Check YOUR project out!
@@ -168,6 +174,7 @@ runs:
         store-url: 'http://example.com:8001/MyProject'
         store-username: ${{ secrets.CODECHECKER_STORE_USER }}
         store-password: ${{ secrets.CODECHECKER_STORE_PASSWORD }}
+        # store-run-name: "custom run name to store against"
 
     # Upload the results to the CI.
     - uses: actions/upload-artifact@v2
@@ -176,7 +183,58 @@ runs:
         path: ${{ steps.codechecker.outputs.result-html-dir }}
 ```
 
+### Acting as a CI gate on pull requests
 
+CodeChecker is capable of calculating the difference between two analyses.
+If an analysis of the stable version of the project is stored (see above) to a server, a job for pull requests can be configured that automatically rejects a pull request if it tries to introduce _new_ analysis findings.
+
+To get the reports in a human-consumable form, they must be uploaded somewhere first, before the failure step fails the entire job!
+
+```yaml
+on:
+  pull_request:
+
+runs:
+  steps:
+    # Check the pull request out! (In pull_request jobs, the checkout action
+    # automatically downloads the "after-merge" state of the pull request if
+    # there are no conflicts.)
+    - name: "Check out repository"
+      uses: actions/checkout@v2
+
+    # Prepare a build
+    - name: "Prepare build"
+      run: |
+        mkdir -pv Build
+        cd Build
+        cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF
+
+    # Run the analysis
+    - uses: whisperity/codechecker-analysis-action
+      id: codechecker
+      with:
+        build-command: "cd ${{ github.workspace }}/Build; cmake --build ."
+        diff: true
+        diff-url: 'http://example.com:8001/MyProject'
+        diff-username: ${{ secrets.CODECHECKER_DIFF_USER }}
+        diff-password: ${{ secrets.CODECHECKER_DIFF_PASSWORD }}
+        # diff-run-name: "custom run name to diff against"
+
+    # Upload the potential new findings results to the CI.
+    - uses: actions/upload-artifact@v2
+      if: ${{ steps.codechecker.outputs.warnings-in-diff == 'true' }}
+      with:
+        name: "New introduced results Bug Reports"
+        path: ${{ steps.codechecker.outputs.diff-html-dir }}
+
+    - name: "Fail the job if new findings are introduced"
+      if: ${{ steps.codechecker.outputs.warnings-in-diff == 'true' }}
+      shell: bash
+      run: |
+        echo "::error title=New static analysis warnings::Analysed commit would introduce new static analysis warnings and potential bugs to the project"
+        # Fail the build, after results were collected and uploaded.
+        exit 1
+```
 
 ## Action configuration
 
@@ -215,9 +273,25 @@ runs:
 
 🔖 Read more about [`CodeChecker parse`](http://codechecker.readthedocs.io/en/latest/analyzer/user_guide/#parse) in the official documentation.
 
-### Store settings
+### Diff configuration
+
+🔖 Read more about [`CodeChecker cmd diff`](http://codechecker.readthedocs.io/en/latest/analyzer/user_guide/#cmd-diff) in the official documentation.
+
+🔓 Checking the analysis results against the contents of a server requires the `PRODUCT_VIEW` permission, if the server is requiring authentication.
+
+| Variable        | Default                                                 | Description                                                                                                                                                                                                                                                                                                                     |
+|-----------------|---------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `diff`          | `false`                                                 | If set to `true`, the job will compute a diff of the current analysis results against the results stored on a remote server.                                                                                                                                                                                                    |
+| `diff-url`      |                                                         | The URL of the CodeChecker product to check and diff against, **including** the [endpoint](http://codechecker.readthedocs.io/en/latest/web/user_guide/#product_url-format). Usually in the format of `http://example.com/ProductName`. Specifying this variable is **required** if `diff` was set to `true`.                    |
+| `diff-username` |                                                         | If the server requires authentication to access, specify the username which the check should log in with.                                                                                                                                                                                                                       |
+| `diff-password` |                                                         | The password or [generated access token](http://codechecker.readthedocs.io/en/latest/web/authentication/#personal-access-token) corresponding to the user. 🔐 **Note:** It is recommended that this is configured as a repository secret, and given as such: `${{ secrets.CODECHECKER_PASSWORD }}` when configuring the action. |
+| `diff-run-name` | (auto-generated, in the format `user/repo: branchname`) | CodeChecker analysis executions are collected into _runs_. A run usually correlates to one configuration of the analysis.                                                                                                                                                                                                       |
+
+### Store configuration
 
 🔖 Read more about [`CodeChecker store`](http://codechecker.readthedocs.io/en/latest/web/user_guide/#store) in the official documentation.
+
+🔓 Storing runs to a server requires the `PRODUCT_STORE` permission, if the server is requiring authentication.
 
 | Variable         | Default                                                 | Description                                                                                                                                                                                                                                                                                                                     |
 |------------------|---------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -231,12 +305,16 @@ runs:
 
 The action exposes the following outputs which may be used in a workflow's steps succeeding the analysis.
 
-| Variable           | Value                                     | Description                                                                                                          |
-|--------------------|-------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| `analyze-output`   | Auto-generated, or `analyze-output` input | The directory where the **raw** analysis output files are available.                                                 |
-| `logfile`          | Auto-generated, or `logfile` input        | The JSON Compilation Database of the analysis that was executed.                                                     |
-| `result-html-dir`  | Auto-generated.                           | The directory where the **user-friendly HTML** bug reports were generated to.                                        |
-| `result-log`       | Auto-generated.                           | `CodeChecker parse`'s output log file which contains the findings dumped into it.                                    |
-| `store-run-name`   | Auto-generated, or `store-run-name` input | The name of the analysis run (if `store` was enabled) to which the results were uploaded to.                         |
-| `store-successful` | `true` or `false`                         | Whether storing the results succeeded. Useful for optionally breaking the build later to detect networking failures. |
-| `warnings`         | `true` or `false`                         | Whether the static analysers reported any findings.                                                                  |
+| Variable           | Value                                     | Description                                                                                                                          |
+|--------------------|-------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| `analyze-output`   | Auto-generated, or `analyze-output` input | The directory where the **raw** analysis output files are available.                                                                 |
+| `logfile`          | Auto-generated, or `logfile` input        | The JSON Compilation Database of the analysis that was executed.                                                                     |
+| `diff-html-dir`    | Auto-generated.                           | The directory where the **user-friendly HTML** bug reports were generated to about the **new** findings (if `diff` was enabled).     |
+| `diff-run-name`    | Auto-generated, or `diff-run-name` input  | The name of the analysis run (if `diff` was enabled) against which the reports were compared.                                        |
+| `diff-result-log`  | Auto-generated.                           | `CodeChecker cmd diff`'s output log file which contains the **new** findings dumped into it.                                         |
+| `result-html-dir`  | Auto-generated.                           | The directory where the **user-friendly HTML** bug reports were generated to.                                                        |
+| `result-log`       | Auto-generated.                           | `CodeChecker parse`'s output log file which contains the findings dumped into it.                                                    |
+| `store-run-name`   | Auto-generated, or `store-run-name` input | The name of the analysis run (if `store` was enabled) to which the results were uploaded to.                                         |
+| `store-successful` | `true` or `false`                         | Whether storing the results succeeded. Useful for optionally breaking the build later to detect networking failures.                 |
+| `warnings`         | `true` or `false`                         | Whether the static analysers reported any findings.                                                                                  |
+| `warnings-in-diff` | `true` or `false`                         | If `diff` was enabled, whether there were **new** findings in the current analysis when compared against the contents of the server. |

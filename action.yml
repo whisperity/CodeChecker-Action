@@ -43,6 +43,24 @@ inputs:
     required: true
     default: 'false'
 
+  diff:
+    description: 'Whether to enable calculating the different of the current analysis results against a run stored on a CodeChecker server. If enabled, other flags, such as "diff-url" must also be set.'
+    required: true
+    default: 'false'
+  diff-url:
+    description: 'The CodeChecker product URL (usually in the format of http://example.com/ProductName) where the diff should connect to. Mandatory if "diff" is true.'
+    required: false
+  diff-username:
+    description: 'If the server requires authentication, the username to authenticate with.'
+    required: false
+  diff-password:
+    description: 'The password (or generated private access token) corresponding to the user.'
+    required: false
+  diff-run-name:
+    description: 'An identifying name of the analysis run. A run usually correlates to a set of configuration, e.g. analysis mode, branch, etc. If left default, the name is automatically generated from the current repository and branch name.'
+    required: true
+    default: '__DEFAULT__'
+
   store:
     description: 'Whether to enable storing the results to a CodeChecker server. If enabled, other flags, such as "store-url" must also be set.'
     required: true
@@ -80,6 +98,19 @@ outputs:
     description: 'The output directory where the user-friendly HTML reports were stored to.'
     value: ${{ steps.parse.outputs.HTML_DIR }}
 
+  diff-html-dir:
+    description: 'The output directory where the user-friendly HTML reports about the new findings (if "diff" was enabled) were stored to.'
+    value: ${{ steps.diff.outputs.HTML_DIR }}
+  diff-run-name:
+    description: 'The name of the analysis run against which the current reports were compared.'
+    value: ${{ steps.diff-pre.outputs.RUN_NAME }}
+  diff-result-log:
+    description: 'The file where the output of CodeChecker cmd diff is written to verbatim.'
+    value: ${{ steps.diff.outputs.OUTPUT_LOG }}
+  warnings-in-diff:
+    description: 'Whether the current analysis produced any reports that were NEW, compared to the configured analysis run on the server.'
+    value: ${{ steps.diff.outputs.HAS_NEW_FINDINGS }}
+
   store-run-name:
     description: 'The name of the analysis run that the results were uploaded to.'
     value: ${{ steps.store-pre.outputs.RUN_NAME }}
@@ -109,7 +140,7 @@ runs:
     - name: "Build and Package CodeChecker"
       id: codechecker
       env:
-        CODECHECKER_WILL_USE_WEB_API: ${{ inputs.store == 'true' }}
+        CODECHECKER_WILL_USE_WEB_API: ${{ inputs.store == 'true' || inputs.diff == 'true' }}
 
         IN_INSTALL_CUSTOM: ${{ inputs.install-custom }}
         IN_VERSION: ${{ inputs.version }}
@@ -138,9 +169,9 @@ runs:
     - name: "Execute static analysis"
       id: analyze
       env:
-        ACTION_NAME: ${{ github.action }}
         CODECHECKER_PATH: ${{ steps.codechecker.outputs.PATH }}
         COMPILATION_DATABASE: ${{ steps.log.outputs.COMPILATION_DATABASE }}
+        GITHUB_ACTION_NAME: ${{ github.action }}
 
         IN_CONFIGFILE: ${{ inputs.config }}
         IN_CTU: ${{ inputs.ctu }}
@@ -157,9 +188,39 @@ runs:
         RAW_RESULT_DIR: ${{ steps.analyze.outputs.OUTPUT_DIR }}
 
         IN_CONFIGFILE: ${{ inputs.config }}
-        IN_OUTPUT_DIR: ${{ inputs.analyze-output }}
       shell: bash
       run: ${{ github.action_path }}/src/parse-results.sh
+
+    - name: "Generate the configuration for diffing current results against previously stored"
+      id: diff-pre
+      if: ${{ inputs.diff == 'true' }}
+      env:
+        IN_DIFF_URL: ${{ inputs.diff-url }}
+        IN_DIFF_USERNAME: ${{ inputs.diff-username }}
+        IN_DIFF_PASSWORD: ${{ inputs.diff-password }}
+        IN_DIFF_RUN_NAME: ${{ inputs.diff-run-name }}
+
+        GITHUB_BASE_REF: ${{ github.base_ref }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_REF_NAME: ${{ github.ref_name }}
+        GITHUB_REF_TYPE: ${{ github.ref_type }}
+      shell: bash
+      run: ${{ github.action_path }}/src/diff-pre.sh
+
+    - name: "Diff current results against previously stored run"
+      id: diff
+      if: ${{ steps.diff-pre.outputs.DIFF_CONFIGURED == 'true' }}
+      env:
+        PROJECT_PATH: ${{ github.workspace }}
+        CODECHECKER_PATH: ${{ steps.codechecker.outputs.PATH }}
+        CODECHECKER_DIFF_RUN_NAME: ${{ steps.diff-pre.outputs.RUN_NAME }}
+        RAW_RESULT_DIR: ${{ steps.analyze.outputs.OUTPUT_DIR }}
+
+        IN_CONFIGFILE: ${{ inputs.config }}
+        IN_DIFF_URL: ${{ inputs.diff-url }}
+      shell: bash
+      run: ${{ github.action_path }}/src/diff.sh
 
     - name: "Generate the configuration for uploading results"
       id: store-pre

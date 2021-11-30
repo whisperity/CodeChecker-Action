@@ -43,6 +43,7 @@ jobs:
           install-custom: ${{ matrix.install-custom }}
           version: ${{ matrix.version }}
           llvm-version: ${{ matrix.llvm-version }}
+
           logfile: "test/empty/compile_commands.json"
 
   simple-analysis-tests:
@@ -83,6 +84,7 @@ jobs:
       - uses: ./
         with:
           config: 'test/codechecker.verbose.json'
+
           logfile: 'test/simple/compile_commands.json'
   analyze-ctu:
     name: "Analyze: CTU shortcut"
@@ -94,6 +96,7 @@ jobs:
         id: codechecker
         with:
           logfile: 'test/ctu/compile_commands.json'
+
           ctu: true
       - name: "Reject test if previous step did not produce CTU finding"
         run: cat ${{ steps.codechecker.outputs.result-log }} | grep "Dereference of null pointer"
@@ -108,11 +111,12 @@ jobs:
         id: codechecker
         continue-on-error: true
         with:
-          logfile: 'test/simple/compile_commands.json'
           # FIXME: 6.18 release on PyPI is broken when it comes to the "parse"
           # command. See Ericsson/CodeChecker#3515.
           install-custom: true
           version: "v6.18.0"
+
+          logfile: 'test/simple/compile_commands.json'
       - name: "Reject test if output isn't as expected"
         if: ${{ steps.codechecker.outputs.warnings != 'true' }}
         run: |
@@ -128,11 +132,12 @@ jobs:
       - uses: ./
         id: codechecker
         with:
-          logfile: 'test/simple/compile_commands.json'
           # FIXME: 6.18 release on PyPI is broken when it comes to the "parse"
           # command. See Ericsson/CodeChecker#3515.
           install-custom: true
           version: "v6.18.0"
+
+          logfile: 'test/simple/compile_commands.json'
       - uses: actions/upload-artifact@v2
         with:
           name: "Parse HTML test results"
@@ -187,7 +192,9 @@ jobs:
         continue-on-error: true
         with:
           version: "${{ env.CODECHECKER_VERSION }}"
+
           logfile: 'test/simple/compile_commands.json'
+
           store: true
           store-url: 'http://0.0.0.0:8001/Default'
           store-username: 'root'
@@ -209,4 +216,69 @@ jobs:
           docker ps -a
       - name: "Fail the build if the test execution failed"
         if: ${{ steps.test.outcome == 'failure' || steps.codechecker.outcome == 'failure' || steps.codechecker.outputs.store-successful != 'true' }}
+        run: exit 1
+
+  diff:
+    name: "Diff: New findings are discovered and reported"
+    runs-on: ubuntu-20.04
+    env:
+      CODECHECKER_VERSION: '6.18.0'
+    # This time, we do not need authentication, so test with the official Docker subsystem.
+    services:
+      codechecker-server:
+        image: 'codechecker/codechecker-web:6.18.0'
+        ports:
+          - 8001:8001/tcp
+    steps:
+      - uses: actions/checkout@v2
+      # Need to do this manually because the server for this test has to have
+      # authentication on, with a known username and password.
+      - name: "Wait for CodeChecker server service to go live"
+        run: |
+          set -x
+
+          sudo apt-get -y update
+          sudo apt-get -y install --no-install-recommends \
+            netcat \
+            wget
+
+          wget -qO- http://raw.githubusercontent.com/eficode/wait-for/v2.1.3/wait-for | sh -s -- --timeout=30 http://0.0.0.0:8001/ -- echo "CodeChecker up"
+      - run: test/fix_compile_json_paths.sh
+      - name: "Do the first analysis that stores a result"
+        uses: ./
+        id: codechecker-store
+        continue-on-error: true
+        with:
+          # FIXME: 6.18 release on PyPI is broken when it comes to the "parse"
+          # command. See Ericsson/CodeChecker#3515.
+          install-custom: true
+          version: "v${{ env.CODECHECKER_VERSION }}"
+
+          logfile: 'test/simple/compile_commands.json'
+
+          store: true
+          store-url: 'http://0.0.0.0:8001/Default'
+          store-run-name: 'test-run'
+      - name: "Do the second analysis that finds a new result"
+        uses: ./
+        id: codechecker-diff
+        with:
+          # FIXME: 6.18 release on PyPI is broken when it comes to the "parse"
+          # command. See Ericsson/CodeChecker#3515.
+          install-custom: true
+          version: "v${{ env.CODECHECKER_VERSION }}"
+
+          logfile: 'test/simple2/compile_commands.json'
+
+          diff: true
+          diff-url: 'http://0.0.0.0:8001/Default'
+          diff-run-name: 'test-run'
+      - uses: actions/upload-artifact@v2
+        if: ${{ steps.codechecker-diff.outputs.warnings-in-diff == 'true' }}
+        with:
+          name: "Diff HTML test results"
+          path: ${{ steps.codechecker-diff.outputs.diff-html-dir }}
+          if-no-files-found: error
+      - name: "Fail the build if the test execution failed"
+        if: ${{ steps.codechecker-store.outcome == 'failure' || steps.codechecker-diff.outcome == 'failure' || steps.codechecker-store.outputs.store-successful != 'true' || steps.codechecker-diff.outputs.warnings-in-diff != 'true' }}
         run: exit 1

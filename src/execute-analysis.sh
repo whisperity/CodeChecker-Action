@@ -8,7 +8,7 @@ fi
 
 OUTPUT_DIR="$IN_OUTPUT_DIR"
 if [[ -z "$OUTPUT_DIR" ]]; then
-  OUTPUT_DIR=~/"$ACTION_NAME"_Results
+  OUTPUT_DIR=~/"$GITHUB_ACTION_NAME"_Results
 fi
 
 mkdir -pv "$(dirname $"OUTPUT_DIR")"
