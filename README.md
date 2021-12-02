@@ -269,7 +269,7 @@ runs:
 
 ### Diff configuration
 
-🔖 Read more about [`CodeChecker cmd diff`](http://codechecker.readthedocs.io/en/latest/analyzer/user_guide/#cmd-diff) in the official documentation.
+🔖 Read more about [`CodeChecker cmd diff`](http://codechecker.readthedocs.io/en/latest/analyzer/web_guide/#cmd-diff) in the official documentation.
 
 🔓 Checking the analysis results against the contents of a server requires the `PRODUCT_VIEW` permission, if the server is requiring authentication.
 
