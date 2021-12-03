@@ -220,6 +220,27 @@ jobs:
       - name: "Fail the build if the test execution failed"
         if: ${{ steps.test.outcome == 'failure' || steps.codechecker.outcome == 'failure' || steps.codechecker.outputs.store-successful != 'true' }}
         run: exit 1
+  store-production:
+    name: "Store: Store to a real server"
+    runs-on: ubuntu-20.04
+    if: ${{ github.event_name == 'push' }}
+    env:
+      CODECHECKER_VERSION: '6.18.0'
+    steps:
+      - uses: actions/checkout@v2
+      - run: test/fix_compile_json_paths.sh
+      - uses: ./
+        id: codechecker
+        continue-on-error: true
+        with:
+          version: "${{ env.CODECHECKER_VERSION }}"
+
+          logfile: 'test/simple2/compile_commands.json'
+
+          store: true
+          store-url: ${{ secrets.CODECHECKER_URL }}
+          store-username: ${{ secrets.CODECHECKER_USERNAME }}
+          store-password: ${{ secrets.CODECHECKER_PASSWORD }}
 
   diff:
     name: "Diff: New findings are discovered and reported"
