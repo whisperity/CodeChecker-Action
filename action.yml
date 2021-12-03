@@ -42,6 +42,10 @@ inputs:
     description: 'Whether to enable Cross Translation Unit (CTU) analysis in the Clang Static Analyzer.'
     required: true
     default: 'false'
+  ignore-analyze-crashes:
+    description: 'If set to "true", the "analyze" action will ALWAYS pass, and not report a failure if some analysis jobs fail to execute due to internal crashes in the Clang analysers.'
+    required: true
+    default: 'true'
 
   diff:
     description: 'Whether to enable calculating the different of the current analysis results against a run stored on a CodeChecker server. If enabled, other flags, such as "diff-url" must also be set.'
@@ -176,6 +180,7 @@ runs:
         IN_CONFIGFILE: ${{ inputs.config }}
         IN_CTU: ${{ inputs.ctu }}
         IN_FLAGS: ${{ inputs.analyze-options }}
+        IN_IGNORE_CRASHES: ${{ inputs.ignore-analyze-crashes }}
         IN_OUTPUT_DIR: ${{ inputs.analyze-output }}
       shell: bash
       run: ${{ github.action_path }}/src/execute-analysis.sh

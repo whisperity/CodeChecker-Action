@@ -33,17 +33,21 @@ echo "::endgroup::"
   || true
 
 echo "::group::Executing Static Analysis"
-# Note: Ignoring the result of the analyze command in CTU mode, as we do not
-# wish to break the build on a CTU failure.
 "$CODECHECKER_PATH"/CodeChecker analyze \
     "$COMPILATION_DATABASE" \
     --output "$OUTPUT_DIR" \
     --jobs $(nproc) \
     $CONFIG_FLAG_1 $CONFIG_FLAG_2 \
-    $CTU_FLAGS \
-  || [[ "$IN_CTU" == "true" ]]
+    $CTU_FLAGS
 EXIT_CODE=$?
 echo "::endgroup::"
+
+if [[ $EXIT_CODE -ne 0 && "$IN_IGNORE_CRASHES" == "true" ]]; then
+  # In general it is a good idea not to destroy the entire job just because a
+  # few translation units failed. Crashes are, unfortunately, usual.
+  echo "::warning title=Static Analysis crashed on some inputs::Some of the analysis actions failed to conclude due to internal error in the analyser."
+  EXIT_CODE=0
+fi
 
 echo "::set-output name=OUTPUT_DIR::$OUTPUT_DIR"
 exit $EXIT_CODE

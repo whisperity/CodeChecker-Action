@@ -258,10 +258,11 @@ runs:
 
 🔖 Read more about [`CodeChecker analyze`](http://codechecker.readthedocs.io/en/latest/analyzer/user_guide/#analyze) in the official documentation.
 
-| Variable         | Default          | Description                                                                                                                                                                                                                                                  |
-|------------------|------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `analyze-output` | (auto-generated) | The directory where the **raw** analysis output should be stored.                                                                                                                                                                                            |
-| `ctu`            | `false`          | Enable [Cross Translation Unit analysis](http://clang.llvm.org/docs/analyzer/user-docs/CrossTranslationUnit.html) in the _Clang Static Analyzer_. ⚠️ **CAUTION!** _CTU_ analysis might take a very long time, and CTU is officially regarded as experimental. |
+| Variable                 | Default          | Description                                                                                                                                                                                                                                                  |
+|--------------------------|------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `analyze-output`         | (auto-generated) | The directory where the **raw** analysis output should be stored.                                                                                                                                                                                            |
+| `ctu`                    | `false`          | Enable [Cross Translation Unit analysis](http://clang.llvm.org/docs/analyzer/user-docs/CrossTranslationUnit.html) in the _Clang Static Analyzer_. ⚠️ **CAUTION!** _CTU_ analysis might take a very long time, and CTU is officially regarded as experimental. |
+| `ignore-analyze-crashes` | `true`           | If set to `true`, the analysis phase will not report an error if some analysis actions fail (due to potential crashes in Clang).                                                                                                                             |
 
 ### Report configuration
 
