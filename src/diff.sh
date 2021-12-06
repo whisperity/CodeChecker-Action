@@ -28,12 +28,6 @@ fi
 OUTPUT_DIR="$RAW_RESULT_DIR"_DiffHTML
 OUTPUT_LOG="$(dirname "$RAW_RESULT_DIR")"/"$(basename "$RAW_RESULT_DIR")_Diff.log"
 mkdir -pv "$(dirname "$OUTPUT_DIR")"
-
-if [[ ! -z "$IN_CONFIGFILE" ]]; then
-  CONFIG_FLAG_1="--config"
-  CONFIG_FLAG_2=$IN_CONFIGFILE
-  echo "Using configuration file \"$IN_CONFIGFILE\"!"
-fi
 echo "::endgroup::"
 
 echo "::group::Generating HTML results from diff"
@@ -45,7 +39,6 @@ echo "::group::Generating HTML results from diff"
   --newname "$RAW_RESULT_DIR" \
   --output html \
   --export "$OUTPUT_DIR" \
-  $CONFIG_FLAG_1 $CONFIG_FLAG_2 \
   || true
 echo "::set-output name=HTML_DIR::$OUTPUT_DIR"
 echo "::endgroup::"
@@ -57,7 +50,6 @@ echo "::group::Printing diff results to log"
   --url "$IN_DIFF_URL" \
   --basename "$CODECHECKER_DIFF_RUN_NAME" \
   --newname "$RAW_RESULT_DIR" \
-  $CONFIG_FLAG_1 $CONFIG_FLAG_2 \
   > "$OUTPUT_LOG"
 EXIT_CODE=$?
 
