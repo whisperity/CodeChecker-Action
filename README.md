@@ -208,7 +208,15 @@ runs:
       id: codechecker
       with:
         build-command: "cd ${{ github.workspace }}/Build; cmake --build ."
-        diff: true
+
+        store: ${{ github.event_name == 'push' }}
+        store-url: 'http://example.com:8001/MyProject'
+        store-username: ${{ secrets.CODECHECKER_STORE_USER }}
+        store-password: ${{ secrets.CODECHECKER_STORE_PASSWORD }}
+        # Keep the names for 'store' and 'diff' in sync, or auto-generated!
+        # diff-run-name: "custom run name to store with"
+
+        diff: ${{ github.event_name == 'pull_request' }}
         diff-url: 'http://example.com:8001/MyProject'
         diff-username: ${{ secrets.CODECHECKER_DIFF_USER }}
         diff-password: ${{ secrets.CODECHECKER_DIFF_PASSWORD }}
