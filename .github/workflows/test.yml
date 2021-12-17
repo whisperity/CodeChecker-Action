@@ -18,18 +18,22 @@ jobs:
       matrix:
         include:
           - os: ubuntu-18.04
+            # Install a tag from GitHub.
             install-custom: true
             version: v6.16.0
             llvm-version: '12'
           - os: ubuntu-20.04
+            # Install a specific package from PyPI.
             install-custom: false
             version: 6.17.0
             llvm-version: '13'
           - os: ubuntu-20.04
+            # Install a branch from GitHub.
             install-custom: true
             version: master
             llvm-version: 'latest'
           - os: ubuntu-20.04
+            # Install the latest package from PyPI.
             install-custom: false
             version: master
             llvm-version: 'latest'
@@ -111,11 +115,6 @@ jobs:
         id: codechecker
         continue-on-error: true
         with:
-          # FIXME: 6.18 release on PyPI is broken when it comes to the "parse"
-          # command. See Ericsson/CodeChecker#3515.
-          install-custom: true
-          version: "v6.18.0"
-
           logfile: 'test/simple/compile_commands.json'
       - name: "Reject test if output isn't as expected"
         if: ${{ steps.codechecker.outputs.warnings != 'true' }}
@@ -132,11 +131,6 @@ jobs:
       - uses: ./
         id: codechecker
         with:
-          # FIXME: 6.18 release on PyPI is broken when it comes to the "parse"
-          # command. See Ericsson/CodeChecker#3515.
-          install-custom: true
-          version: "v6.18.0"
-
           logfile: 'test/simple/compile_commands.json'
       - uses: actions/upload-artifact@v2
         with:
@@ -148,7 +142,7 @@ jobs:
     name: "Store: Authenticated local store of single result"
     runs-on: ubuntu-20.04
     env:
-      CODECHECKER_VERSION: '6.18.0'
+      CODECHECKER_VERSION: '6.18.1'
     steps:
       - uses: actions/checkout@v2
       # Need to do this manually because the server for this test has to have
@@ -225,7 +219,7 @@ jobs:
     runs-on: ubuntu-20.04
     if: ${{ github.event_name == 'push' }}
     env:
-      CODECHECKER_VERSION: '6.18.0'
+      CODECHECKER_VERSION: '6.18.1'
     steps:
       - uses: actions/checkout@v2
       - run: test/fix_compile_json_paths.sh
@@ -246,11 +240,11 @@ jobs:
     name: "Diff: New findings are discovered and reported"
     runs-on: ubuntu-20.04
     env:
-      CODECHECKER_VERSION: '6.18.0'
+      CODECHECKER_VERSION: '6.18.1'
     # This time, we do not need authentication, so test with the official Docker subsystem.
     services:
       codechecker-server:
-        image: 'codechecker/codechecker-web:6.18.0'
+        image: 'codechecker/codechecker-web:6.18.1'
         ports:
           - 8001:8001/tcp
     steps:
@@ -273,8 +267,6 @@ jobs:
         id: codechecker-store
         continue-on-error: true
         with:
-          # FIXME: 6.18 release on PyPI is broken when it comes to the "parse"
-          # command. See Ericsson/CodeChecker#3515.
           install-custom: true
           version: "v${{ env.CODECHECKER_VERSION }}"
 
@@ -287,9 +279,6 @@ jobs:
         uses: ./
         id: codechecker-diff
         with:
-          # FIXME: 6.18 release on PyPI is broken when it comes to the "parse"
-          # command. See Ericsson/CodeChecker#3515.
-          install-custom: true
           version: "v${{ env.CODECHECKER_VERSION }}"
 
           logfile: 'test/simple2/compile_commands.json'
