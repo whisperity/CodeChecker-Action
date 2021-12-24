@@ -274,7 +274,6 @@ jobs:
 
           store: true
           store-url: 'http://0.0.0.0:8001/Default'
-          store-run-name: 'test-run'
       - name: "Do the second analysis that finds a new result"
         uses: ./
         id: codechecker-diff
@@ -285,7 +284,6 @@ jobs:
 
           diff: true
           diff-url: 'http://0.0.0.0:8001/Default'
-          diff-run-name: 'test-run'
       - uses: actions/upload-artifact@v2
         if: ${{ steps.codechecker-diff.outputs.warnings-in-diff == 'true' }}
         with:

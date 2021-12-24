@@ -31,7 +31,7 @@ fi
 
 if [[ "$GITHUB_REF_TYPE" == "branch" ]]; then
   echo "Auto-generating run name for a BRANCH."
-  echo "::set-output name=RUN_NAME::$GITHUB_REPOSITORY/$GITHUB_REF_NAME"
+  echo "::set-output name=RUN_NAME::$GITHUB_REPOSITORY: $GITHUB_REF_NAME"
   echo "::set-output name=RUN_TAG::$GITHUB_SHA"
   echo "::set-output name=STORE_CONFIGURED::true"
   exit 0

@@ -30,12 +30,12 @@ fi
 
 if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
   echo "Auto-generating run name for a PULL REQUEST's target (base)."
-  echo "::set-output name=RUN_NAME::$GITHUB_REPOSITORY/$GITHUB_BASE_REF"
+  echo "::set-output name=RUN_NAME::$GITHUB_REPOSITORY\: $GITHUB_BASE_REF"
   echo "::set-output name=DIFF_CONFIGURED::true"
   exit 0
 elif [[ "$GITHUB_REF_TYPE" == "branch" ]]; then
   echo "Auto-generating run name for a BRANCH."
-  echo "::set-output name=RUN_NAME::$GITHUB_REPOSITORY/$GITHUB_REF_NAME"
+  echo "::set-output name=RUN_NAME::$GITHUB_REPOSITORY\: $GITHUB_REF_NAME"
   echo "::set-output name=DIFF_CONFIGURED::true"
   exit 0
 elif [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
