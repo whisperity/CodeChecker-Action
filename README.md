@@ -372,16 +372,19 @@ Please refer to earlier parts of the documentation for the configuration of thes
 
 The action exposes the following outputs which may be used in a workflow's steps succeeding the analysis.
 
-| Variable           | Value                                     | Description                                                                                                                          |
-|--------------------|-------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| `analyze-output`   | Auto-generated, or `analyze-output` input | The directory where the **raw** analysis output files (either created by the analysers, or by the converter) are available.          |
-| `logfile`          | Auto-generated, or `logfile` input        | The JSON Compilation Database of the analysis that was executed.                                                                     |
-| `diff-html-dir`    | Auto-generated.                           | The directory where the **user-friendly HTML** bug reports were generated to about the **new** findings (if `diff` was enabled).     |
-| `diff-result-log`  | Auto-generated.                           | `CodeChecker cmd diff`'s output log file which contains the **new** findings dumped into it.                                         |
-| `diff-run-name`    | Auto-generated, or `diff-run-name` input  | The name of the analysis run (if `diff` was enabled) against which the reports were compared.                                        |
-| `result-html-dir`  | Auto-generated.                           | The directory where the **user-friendly HTML** bug reports were generated to.                                                        |
-| `result-log`       | Auto-generated.                           | `CodeChecker parse`'s output log file which contains the findings dumped into it.                                                    |
-| `store-run-name`   | Auto-generated, or `store-run-name` input | The name of the analysis run (if `store` was enabled) to which the results were uploaded to.                                         |
-| `store-successful` | `true` or `false`                         | Whether storing the results succeeded. Useful for optionally breaking the build later to detect networking failures.                 |
-| `warnings`         | `true` or `false`                         | Whether the static analysers reported any findings.                                                                                  |
-| `warnings-in-diff` | `true` or `false`                         | If `diff` was enabled, whether there were **new** findings in the current analysis when compared against the contents of the server. |
+| Variable              | Value                                           | Description                                                                                                                          |
+|-----------------------|-------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| `analyze-output`      | Auto-generated, or `analyze-output` input       | The directory where the **raw** analysis output files (either created by the analysers, or by the converter) are available.          |
+| `codechecker-version` | Auto-generated (likely same as input `version`) | The version of the installed CodeChecker that performed the analysis.                                                                |
+| `codechecker-hash`    | Auto-generated.                                 | The Git hash of the installed CodeChecker that performed the analysis.                                                               |
+| `logfile`             | Auto-generated, or `logfile` input              | The JSON Compilation Database of the analysis that was executed.                                                                     |
+| `llvm-version`        | Auto-generated.                                 | The full version string of the installed *LLVM/Clang* package (as reported by `clang --version`).                                    |
+| `diff-html-dir`       | Auto-generated.                                 | The directory where the **user-friendly HTML** bug reports were generated to about the **new** findings (if `diff` was enabled).     |
+| `diff-result-log`     | Auto-generated.                                 | `CodeChecker cmd diff`'s output log file which contains the **new** findings dumped into it.                                         |
+| `diff-run-name`       | Auto-generated, or `diff-run-name` input        | The name of the analysis run (if `diff` was enabled) against which the reports were compared.                                        |
+| `result-html-dir`     | Auto-generated.                                 | The directory where the **user-friendly HTML** bug reports were generated to.                                                        |
+| `result-log`          | Auto-generated.                                 | `CodeChecker parse`'s output log file which contains the findings dumped into it.                                                    |
+| `store-run-name`      | Auto-generated, or `store-run-name` input       | The name of the analysis run (if `store` was enabled) to which the results were uploaded to.                                         |
+| `store-successful`    | `true` or `false`                               | Whether storing the results succeeded. Useful for optionally breaking the build later to detect networking failures.                 |
+| `warnings`            | `true` or `false`                               | Whether the static analysers reported any findings.                                                                                  |
+| `warnings-in-diff`    | `true` or `false`                               | If `diff` was enabled, whether there were **new** findings in the current analysis when compared against the contents of the server. |

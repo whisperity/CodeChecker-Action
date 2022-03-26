@@ -3,7 +3,7 @@ if [[ ! -z "$CODECHECKER_ACTION_DEBUG" ]]; then
   set -x
 fi
 
-echo "::group::Installing CodeChecker for PyPI"
+echo "::group::Installing CodeChecker from PyPI"
 if [[ "$IN_VERSION" == "master" ]]; then
   # The default branch name "master" is offered as a convenient shortcut for
   # fetching the latest release.

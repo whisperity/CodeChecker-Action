@@ -95,6 +95,16 @@ inputs:
     default: '__DEFAULT__'
 
 outputs:
+  codechecker-version:
+    description: 'The version of the installed CodeChecker package.'
+    value: ${{ steps.codechecker.outputs.VERSION }}
+  codechecker-hash:
+    description: 'The Git hash of the installed CodeChecker package.'
+    value: ${{ steps.codechecker.outputs.GITSEVEN }}
+  llvm-version:
+    description: 'The version of the installed LLVM package, if the install was requested.'
+    value: ${{ steps.llvm.outputs.REAL_VERSION }}
+
   logfile:
     description: 'The location of the JSON Compilation Database that was used for the analysis.'
     value: ${{ steps.log.outputs.COMPILATION_DATABASE }}
