@@ -61,7 +61,6 @@ jobs:
     name: "Simple analysis: ${{ matrix.logfile && 'logfile' || 'no logfile' }}, ${{ matrix.build-command && 'build-command' || 'no build-command' }}, ${{ matrix.analyze-output && 'analyze-output' || 'no analyze-output'}}"
     runs-on: ubuntu-20.04
 
-
     steps:
       - uses: actions/checkout@v2
       - run: test/fix_compile_json_paths.sh
@@ -104,6 +103,29 @@ jobs:
           ctu: true
       - name: "Reject test if previous step did not produce CTU finding"
         run: cat ${{ steps.codechecker.outputs.result-log }} | grep "Dereference of null pointer"
+
+  report-converter:
+    name: "Report converter: PyLint"
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: "Install PyLint"
+        run: |
+          sudo apt-get install -y pylint
+      - name: "Perform static analysis explicitly with PyLint"
+        run: |
+          pylint test/report-converter/testpylint.py \
+            -f json \
+            --exit-zero \
+            > ./pylint_reports.json
+      - uses: ./
+        id: codechecker
+        with:
+          report-converter: true
+          original-analyser: 'pylint'
+          original-analysis-output: './pylint_reports.json'
+      - name: "Reject test if previous step did not produce findings"
+        run: cat ${{ steps.codechecker.outputs.result-log }} | grep "Explicit return in __init__"
 
   reports-errors:
     name: "Parse: Findings are reported"
@@ -219,7 +241,7 @@ jobs:
     runs-on: ubuntu-20.04
     if: ${{ github.event_name == 'push' }}
     env:
-      CODECHECKER_VERSION: '6.18.1'
+      CODECHECKER_VERSION: '6.19.1'
     steps:
       - uses: actions/checkout@v2
       - run: test/fix_compile_json_paths.sh
@@ -240,11 +262,11 @@ jobs:
     name: "Diff: New findings are discovered and reported"
     runs-on: ubuntu-20.04
     env:
-      CODECHECKER_VERSION: '6.18.1'
+      CODECHECKER_VERSION: '6.19.1'
     # This time, we do not need authentication, so test with the official Docker subsystem.
     services:
       codechecker-server:
-        image: 'codechecker/codechecker-web:6.18.1'
+        image: 'codechecker/codechecker-web:6.19.1'
         ports:
           - 8001:8001/tcp
     steps:

@@ -47,6 +47,17 @@ inputs:
     required: true
     default: 'true'
 
+  report-converter:
+    description: 'Whether to perform report conversion from analyses executed by third-party analysers instead of driving the analysis via CodeChecker directly.'
+    required: true
+    default: 'false'
+  original-analyser:
+    description: 'The type of the third-party analyser which performed the analysis. Passed to the report converter executable, as a mandatory input parameter.'
+    required: false
+  original-analysis-output:
+    description: 'The location of the analysis data emitted by the third-party analyser. Passed to the report converter executable, as a mandatory input parameter.'
+    required: false
+
   diff:
     description: 'Whether to enable calculating the different of the current analysis results against a run stored on a CodeChecker server. If enabled, other flags, such as "diff-url" must also be set.'
     required: true
@@ -89,8 +100,8 @@ outputs:
     value: ${{ steps.log.outputs.COMPILATION_DATABASE }}
 
   analyze-output:
-    description: 'The output directory where the raw analysis output was stored to.'
-    value: ${{ steps.analyze.outputs.OUTPUT_DIR }}
+    description: 'The output directory where the raw analysis or converted output was stored to.'
+    value: ${{ steps.analyze-or-report.outputs.OUTPUT_DIR }}
 
   warnings:
     description: 'Whether the static analyser(s) reported any findings.'
@@ -135,7 +146,7 @@ runs:
 
     - name: "Install LLVM (${{ inputs.llvm-version }})"
       id: llvm
-      if: ${{ inputs.llvm-version != 'ignore' }}
+      if: ${{ inputs.llvm-version != 'ignore' && inputs.report-converter != 'true' }}
       env:
         IN_LLVM_VERSION: ${{ inputs.llvm-version }}
       shell: bash
@@ -159,6 +170,7 @@ runs:
 
     - name: "Prepare JSON Compilation Database"
       id: log
+      if: ${{ inputs.report-converter != 'true' }}
       env:
         ACTION_NAME: ${{ github.action }}
         CODECHECKER_PATH: ${{ steps.codechecker.outputs.PATH }}
@@ -170,8 +182,9 @@ runs:
       shell: bash
       run: ${{ github.action_path }}/src/get-or-create-build-json.sh
 
-    - name: "Execute static analysis"
+    - name: "Execute static analysis for C/C++"
       id: analyze
+      if: ${{ inputs.report-converter != 'true' }}
       env:
         CODECHECKER_PATH: ${{ steps.codechecker.outputs.PATH }}
         COMPILATION_DATABASE: ${{ steps.log.outputs.COMPILATION_DATABASE }}
@@ -179,18 +192,48 @@ runs:
 
         IN_CONFIGFILE: ${{ inputs.config }}
         IN_CTU: ${{ inputs.ctu }}
-        IN_FLAGS: ${{ inputs.analyze-options }}
         IN_IGNORE_CRASHES: ${{ inputs.ignore-analyze-crashes }}
         IN_OUTPUT_DIR: ${{ inputs.analyze-output }}
       shell: bash
       run: ${{ github.action_path }}/src/execute-analysis.sh
 
-    - name: "Parse and convert results"
+    - name: "Perform report-converter"
+      id: report-convert
+      if: ${{ inputs.report-converter == 'true' }}
+      env:
+        CODECHECKER_PATH: ${{ steps.codechecker.outputs.PATH }}
+        GITHUB_ACTION_NAME: ${{ github.action }}
+
+        IN_ORIGINAL_ANALYSER: ${{ inputs.original-analyser }}
+        IN_ORIGINAL_ANALYSIS_OUTPUT: ${{ inputs.original-analysis-output }}
+        IN_IGNORE_CRASHES: ${{ inputs.ignore-analyze-crashes }}
+        IN_OUTPUT_DIR: ${{ inputs.analyze-output }}
+      shell: bash
+      run: ${{ github.action_path }}/src/report-converter.sh
+
+    # This step is needed because it is forbidden to reuse the 'id' of a step,
+    # even if the two steps taking the same 'id' are mutually exclusive.
+    - name: "(Internal: set output variables for steps after analyze/convert)"
+      id: analyze-or-report
+      shell: bash
+      run: |
+        if [[ ! -z "$CODECHECKER_ACTION_DEBUG" ]]; then
+          set -x
+        fi
+
+        if [[ "${{ inputs.report-converter }}" != "true" ]]
+        then
+          echo "::set-output name=OUTPUT_DIR::${{ steps.analyze.outputs.OUTPUT_DIR }}"
+        else
+          echo "::set-output name=OUTPUT_DIR::${{ steps.report-convert.outputs.OUTPUT_DIR }}"
+        fi
+
+    - name: "Parse and convert results to HTML"
       id: parse
       env:
         PROJECT_PATH: ${{ github.workspace }}
         CODECHECKER_PATH: ${{ steps.codechecker.outputs.PATH }}
-        RAW_RESULT_DIR: ${{ steps.analyze.outputs.OUTPUT_DIR }}
+        RAW_RESULT_DIR: ${{ steps.analyze-or-report.outputs.OUTPUT_DIR }}
 
         IN_CONFIGFILE: ${{ inputs.config }}
       shell: bash
@@ -220,7 +263,7 @@ runs:
         PROJECT_PATH: ${{ github.workspace }}
         CODECHECKER_PATH: ${{ steps.codechecker.outputs.PATH }}
         CODECHECKER_DIFF_RUN_NAME: ${{ steps.diff-pre.outputs.RUN_NAME }}
-        RAW_RESULT_DIR: ${{ steps.analyze.outputs.OUTPUT_DIR }}
+        RAW_RESULT_DIR: ${{ steps.analyze-or-report.outputs.OUTPUT_DIR }}
 
         IN_CONFIGFILE: ${{ inputs.config }}
         IN_DIFF_URL: ${{ inputs.diff-url }}
@@ -251,7 +294,7 @@ runs:
         CODECHECKER_PATH: ${{ steps.codechecker.outputs.PATH }}
         CODECHECKER_STORE_RUN_NAME: ${{ steps.store-pre.outputs.RUN_NAME }}
         CODECHECKER_STORE_RUN_TAG: ${{ steps.store-pre.outputs.RUN_TAG }}
-        RAW_RESULT_DIR: ${{ steps.analyze.outputs.OUTPUT_DIR }}
+        RAW_RESULT_DIR: ${{ steps.analyze-or-report.outputs.OUTPUT_DIR }}
 
         IN_CONFIGFILE: ${{ inputs.config }}
         IN_STORE_URL: ${{ inputs.store-url }}

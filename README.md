@@ -1,10 +1,10 @@
 # [CodeChecker](http://github.com/Ericsson/CodeChecker/) C++ Static Analysis action
 
-GitHub Action to execute static analysis over C-family projects (C, C++,
-Objective-C) using the [Clang](http://clang.llvm.org/) infrastructure and
-[CodeChecker](http://github.com/Ericsson/CodeChecker/) as its driver.
+GitHub Action to execute static analysis over using [CodeChecker](http://github.com/Ericsson/CodeChecker/) as its driver.
+For C-family projects (C, C++, Objective-C, CUDA, etc.), CodeChecker supports driving the static analysis programs of [Clang](http://clang.llvm.org).
+Several other static analysers' output can be integrated into CodeChecker through the [report converter](http://codechecker.readthedocs.io/en/latest/tools/report-converter/).
 
-## Overview
+## Overview (for C-family projects)
 
 ⚠️ **CAUTION! This action has been written with commands that target Ubuntu-based distributions!**
 
@@ -238,6 +238,60 @@ runs:
         exit 1
 ```
 
+## Overview (for other analyses through the _report-converter_)
+
+⚠️ **CAUTION! This action has been written with commands that target Ubuntu-based distributions!**
+
+This single action composite script encompasses the following steps:
+
+  1. Obtain a package of CodeChecker.
+  3. Use the `report-converter` to convert other analysers' reports to CodeChecker's format.
+  4. Show the analysis results in the CI log, and create HTML reports that can be uploaded as an artefact. (Uploading is to be done by the user!)
+  5. _(Optional)_ Check for the current commit introducing new bug reports against a known state. (Good for pull requests!)
+  6. _(Optional)_ Upload the results to a running _CodeChecker server_. (Good for the main project!)
+
+
+ℹ️ **Note:** Static analysis can be a time-consuming process.
+It's recommended that the static analysis step is not sequential with the rest of a CI execution, but either runs as its own job in a workflow, or a completely distinct workflow altogether.
+
+Please refer to the documentation of the analyser of your choice for this.
+CodeChecker does **NOT** support driving the analysis through external tools, but if a successful analysis had been done, it can convert and store the results.
+
+```yaml
+job:
+  steps:
+    # Check YOUR project out!
+    - name: "Check out repository"
+      uses: actions/checkout@v2
+
+    # Perform the analysis. Details vary between analysers!
+    # Example for "PyLint" added below!
+    - name: "Analyse with PyLint"
+      run: |
+        sudo apt-get -y install pylint
+        pylint -f json --exit-zero myproject > pylint_reports.json
+
+    # Run the conversion
+    - uses: whisperity/codechecker-analysis-action@v1
+      id: codechecker
+      with:
+        report-converter: true
+        original-analyser: "pylint"
+        original-analysis-output: "pylint_reports.json"
+
+    # Upload the results (after conversion by CodeChecker) to the CI.
+    - uses: actions/upload-artifact@v2
+      with:
+        name: "CodeChecker Bug Reports"
+        path: ${{ steps.codechecker.outputs.result-html-dir }}
+```
+
+### Uploading results and acting as a CI gate
+
+The _report-converter_ tool converts the output of various analysers to the common format used by CodeChecker.
+Once the conversion is done, the rest of the action's features can execute in the same fashion as for C/C++ projects.
+Please refer to earlier parts of the documentation for the configuration of these features.
+
 ## Action configuration
 
 | Variable | Default                             | Description                                                                                                                                                                                                                                                                                                                                                  |
@@ -276,6 +330,16 @@ runs:
 
 🔖 Read more about [`CodeChecker parse`](http://codechecker.readthedocs.io/en/latest/analyzer/user_guide/#parse) in the official documentation.
 
+### Report conversion configuration
+
+🔖 Read more about the [`report-converter`](http://codechecker.readthedocs.io/en/latest/tools/report-converter/) in the official documentation.
+
+| Variable                   | Default | Description                                                                                                                                        |
+|----------------------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| `report-converter`         | `false` | If set to `true`, the job will execute _report conversion_ from other analysers instead of driving the static analysis by itself.                  |
+| `original-analyser`        |         | The "type" of the analysis that **had been performed** earlier. Passed as mandatory input to the `report-converter` executable.                    |
+| `original-analysis-output` |         | The file or directory where the results of the third-party analyser are available. Passed as mandatory input to the `report-converter` executable. |
+
 ### Diff configuration
 
 🔖 Read more about [`CodeChecker cmd diff`](http://codechecker.readthedocs.io/en/latest/analyzer/web_guide/#cmd-diff) in the official documentation.
@@ -310,7 +374,7 @@ The action exposes the following outputs which may be used in a workflow's steps
 
 | Variable           | Value                                     | Description                                                                                                                          |
 |--------------------|-------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| `analyze-output`   | Auto-generated, or `analyze-output` input | The directory where the **raw** analysis output files are available.                                                                 |
+| `analyze-output`   | Auto-generated, or `analyze-output` input | The directory where the **raw** analysis output files (either created by the analysers, or by the converter) are available.          |
 | `logfile`          | Auto-generated, or `logfile` input        | The JSON Compilation Database of the analysis that was executed.                                                                     |
 | `diff-html-dir`    | Auto-generated.                           | The directory where the **user-friendly HTML** bug reports were generated to about the **new** findings (if `diff` was enabled).     |
 | `diff-result-log`  | Auto-generated.                           | `CodeChecker cmd diff`'s output log file which contains the **new** findings dumped into it.                                         |
