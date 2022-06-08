@@ -6,6 +6,9 @@ fi
 
 echo "::group::Installing LLVM"
 
+update-alternatives --query clang
+update-alternatives --query clang-tidy
+
 export DISTRO_FANCYNAME="$(lsb_release -c | awk '{ print $2 }')"
 curl -sL http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
 
@@ -21,12 +24,13 @@ fi
 sudo apt-get -y --no-install-recommends install \
   clang-$LLVM_VER      \
   clang-tidy-$LLVM_VER
-sudo update-alternatives --install                   \
-  /usr/bin/clang clang /usr/bin/clang-$LLVM_VER 1000 \
-  --slave                                            \
-    /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-$LLVM_VER
-echo "::endgroup::"
+sudo update-alternatives --install \
+  /usr/bin/clang clang /usr/bin/clang-$LLVM_VER 10000
+sudo update-alternatives --install \
+  /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-$LLVM_VER 10000
 
 update-alternatives --query clang
+update-alternatives --query clang-tidy
+echo "::endgroup::"
 
 echo "::set-output name=REAL_VERSION::$(clang --version | head -n 1 | cut -d' ' -f4-)"
