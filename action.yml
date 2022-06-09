@@ -19,7 +19,7 @@ inputs:
     required: true
     default: 'master'
   llvm-version:
-    description: 'The major version of LLVM to install and use. LLVM is installed from PPA. If "latest", automatically gather the latest version. If "ignore", do not install anything. (Not recommended)'
+    description: 'The major version of LLVM to install and use. LLVM is installed from the community PPA at http://apt.llvm.org. The value MUST be a major version (e.g. 13) that is supported by the PPA for the OS used! If "latest", automatically gather the latest version. If "ignore", do not install anything. (Not recommended.)'
     required: true
     default: 'latest'
 
