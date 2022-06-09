@@ -2,7 +2,7 @@ name: 'CodeChecker Static Analysis'
 author: 'Whisperity'
 description: 'Execute C/C++ static analysis of LLVM/Clang (Clang Static Analyzer and Clang-Tidy) driven via CodeChecker.'
 branding:
-  icon: 'tool'
+  icon: 'cloud-lightning'
   color: 'blue'
 
 inputs:
