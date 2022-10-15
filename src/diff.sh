@@ -40,7 +40,7 @@ echo "::group::Generating HTML results from diff"
   --output html \
   --export "$OUTPUT_DIR" \
   || true
-echo "::set-output name=HTML_DIR::$OUTPUT_DIR"
+echo "HTML_DIR=$OUTPUT_DIR" >> "$GITHUB_OUTPUT"
 echo "::endgroup::"
 
 echo "::group::Printing diff results to log"
@@ -54,17 +54,17 @@ echo "::group::Printing diff results to log"
 EXIT_CODE=$?
 
 cat "$OUTPUT_LOG"
-echo "::set-output name=OUTPUT_LOG::$OUTPUT_LOG"
+echo "OUTPUT_LOG=$OUTPUT_LOG" >> "$GITHUB_OUTPUT"
 echo "::endgroup::"
 
 if [[ $EXIT_CODE -eq 2 ]]; then
-  echo "::set-output name=HAS_NEW_FINDINGS::true"
+  echo "HAS_NEW_FINDINGS=true" >> "$GITHUB_OUTPUT"
 
   # Let the job continue. If there were new results, the script may be breaking
   # the build in a later step. (After a potential upload to server.)
   EXIT_CODE=0
 elif [[ $EXIT_CODE -eq 0 ]]; then
-  echo "::set-output name=HAS_NEW_FINDINGS::false"
+  echo "HAS_NEW_FINDINGS=false" >> "$GITHUB_OUTPUT"
 fi
 
 # Exit code 1 is internal error of executing the step.

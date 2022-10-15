@@ -29,5 +29,5 @@ else
   exit 1
 fi
 
-echo "::set-output name=COMPILATION_DATABASE::$OUT_FILE"
+echo "COMPILATION_DATABASE=$OUT_FILE" >> "$GITHUB_OUTPUT"
 exit $EXIT_CODE

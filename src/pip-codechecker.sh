@@ -18,6 +18,6 @@ which CodeChecker
 CodeChecker analyzer-version
 CodeChecker web-version
 
-echo "::set-output name=PATH::$(dirname $(which CodeChecker))"
-echo "::set-output name=VERSION::$(CodeChecker analyzer-version | grep 'Base package' | cut -d'|' -f 2 | tr -d ' ')"
-echo "::set-output name=GITSEVEN::$(CodeChecker analyzer-version | grep 'Git commit' | cut -d'|' -f 2 | cut -c 2-8)"
+echo "PATH=$(dirname $(which CodeChecker))" >> "$GITHUB_OUTPUT"
+echo "VERSION=$(CodeChecker analyzer-version | grep 'Base package' | cut -d'|' -f 2 | tr -d ' ')" >> "$GITHUB_OUTPUT"
+echo "GITSEVEN=$(CodeChecker analyzer-version | grep 'Git commit' | cut -d'|' -f 2 | cut -c 2-8)" >> "$GITHUB_OUTPUT"

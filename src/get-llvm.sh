@@ -33,4 +33,4 @@ update-alternatives --query clang
 update-alternatives --query clang-tidy
 echo "::endgroup::"
 
-echo "::set-output name=REAL_VERSION::$(clang --version | head -n 1 | cut -d' ' -f4-)"
+echo "REAL_VERSION=$(clang --version | head -n 1 | cut -d' ' -f4-)" >> "$GITHUB_OUTPUT"

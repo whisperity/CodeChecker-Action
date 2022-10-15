@@ -38,8 +38,8 @@ else
   echo "CodeChecker 'web' package not built."
 fi
 
-echo "::set-output name=PATH::$(readlink -f ./build/CodeChecker/bin)"
-echo "::set-output name=VERSION::$(./build/CodeChecker/bin/CodeChecker analyzer-version | grep 'Base package' | cut -d'|' -f 2 | tr -d ' ')"
-echo "::set-output name=GITSEVEN::$(./build/CodeChecker/bin/CodeChecker analyzer-version | grep 'Git commit' | cut -d'|' -f 2 | cut -c 2-8)"
+echo "PATH=$(readlink -f ./build/CodeChecker/bin)" >> "$GITHUB_OUTPUT"
+echo "VERSION=$(./build/CodeChecker/bin/CodeChecker analyzer-version | grep 'Base package' | cut -d'|' -f 2 | tr -d ' ')" >> "$GITHUB_OUTPUT"
+echo "GITSEVEN=$(./build/CodeChecker/bin/CodeChecker analyzer-version | grep 'Git commit' | cut -d'|' -f 2 | cut -c 2-8)" >> "$GITHUB_OUTPUT"
 
 popd

@@ -23,25 +23,25 @@ fi
 
 if [[ ! -z "$IN_STORE_RUN_NAME" && "$IN_STORE_RUN_NAME" != "__DEFAULT__" ]]; then
   echo "Using user-requested run name."
-  echo "::set-output name=RUN_NAME::$IN_STORE_RUN_NAME"
-  echo "::set-output name=RUN_TAG::"
-  echo "::set-output name=STORE_CONFIGURED::true"
+  echo "RUN_NAME=$IN_STORE_RUN_NAME" >> "$GITHUB_OUTPUT"
+  echo "RUN_TAG=" >> "$GITHUB_OUTPUT"
+  echo "STORE_CONFIGURED=true" >> "$GITHUB_OUTPUT"
   exit 0
 fi
 
 if [[ "$GITHUB_REF_TYPE" == "branch" ]]; then
   echo "Auto-generating run name for a BRANCH."
-  echo "::set-output name=RUN_NAME::$GITHUB_REPOSITORY: $GITHUB_REF_NAME"
-  echo "::set-output name=RUN_TAG::$GITHUB_SHA"
-  echo "::set-output name=STORE_CONFIGURED::true"
+  echo "RUN_NAME=$GITHUB_REPOSITORY: $GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+  echo "RUN_TAG=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+  echo "STORE_CONFIGURED=true" >> "$GITHUB_OUTPUT"
   exit 0
 elif [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
   echo "Auto-generating run name for a TAG."
-  echo "::set-output name=RUN_NAME::$GITHUB_REPOSITORY tags"
-  echo "::set-output name=RUN_TAG::$GITHUB_REF_NAME"
-  echo "::set-output name=STORE_CONFIGURED::true"
+  echo "RUN_NAME=$GITHUB_REPOSITORY tags" >> "$GITHUB_OUTPUT"
+  echo "RUN_TAG=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+  echo "STORE_CONFIGURED=true" >> "$GITHUB_OUTPUT"
   exit 0
 fi
 
 echo "::notice title=Preparation for store::Failed to generate a run name. Implementation error?"
-echo "::set-output name=STORE_CONFIGURED::false"
+echo "STORE_CONFIGURED=false" >> "$GITHUB_OUTPUT"

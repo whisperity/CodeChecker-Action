@@ -51,9 +51,9 @@ echo "::endgroup::"
 
 if [[ $SUCCESS -ne 0 ]]; then
   echo "::warning title=Storing results failed::Executing 'CodeChecker store' to upload analysis results to the server has failed. The logs usually provide more information."
-  echo "::set-output name=SUCCESS::false"
+  echo "SUCCESS=false" >> "$GITHUB_OUTPUT"
 else
-  echo "::set-output name=SUCCESS::true"
+  echo "SUCCESS=true" >> "$GITHUB_OUTPUT"
 fi
 
 # Always return 0 from this step. The user can decide if storage is mandatory

@@ -171,7 +171,11 @@ runs:
         IN_VERSION: ${{ inputs.version }}
       shell: bash
       run: |
-        set -x
+        echo "Creating a CodeChecker package..."
+        if [[ ! -z "$CODECHECKER_ACTION_DEBUG" ]]; then
+          set -x
+        fi
+
         if [[ "$IN_INSTALL_CUSTOM" == "true" ]]; then
           ${{ github.action_path }}/src/build-codechecker.sh
         else
@@ -227,16 +231,19 @@ runs:
       id: analyze-or-report
       shell: bash
       run: |
+        echo "(Executing GitHub Actions technical detail...)"
+        echo "::group::(Technical detail, forwarding result of analysis...)"
         if [[ ! -z "$CODECHECKER_ACTION_DEBUG" ]]; then
           set -x
         fi
 
         if [[ "${{ inputs.report-converter }}" != "true" ]]
         then
-          echo "::set-output name=OUTPUT_DIR::${{ steps.analyze.outputs.OUTPUT_DIR }}"
+          echo "OUTPUT_DIR=${{ steps.analyze.outputs.OUTPUT_DIR }}" >> "$GITHUB_OUTPUT"
         else
-          echo "::set-output name=OUTPUT_DIR::${{ steps.report-convert.outputs.OUTPUT_DIR }}"
+          echo "OUTPUT_DIR=${{ steps.report-convert.outputs.OUTPUT_DIR }}" >> "$GITHUB_OUTPUT"
         fi
+        echo "::endgroup::"
 
     - name: "Parse and convert results to HTML"
       id: parse

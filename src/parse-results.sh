@@ -32,7 +32,7 @@ echo "::group::Generating HTML results from analysis"
   --output "$OUTPUT_DIR" \
   --trim-path-prefix "$PROJECT_PATH" \
   || true
-echo "::set-output name=HTML_DIR::$OUTPUT_DIR"
+echo "HTML_DIR=$OUTPUT_DIR" >> "$GITHUB_OUTPUT"
 echo "::endgroup::"
 
 echo "::group::Printing analysis results to log"
@@ -43,17 +43,17 @@ echo "::group::Printing analysis results to log"
 EXIT_CODE=$?
 
 cat "$OUTPUT_LOG"
-echo "::set-output name=OUTPUT_LOG::$OUTPUT_LOG"
+echo "OUTPUT_LOG=$OUTPUT_LOG" >> "$GITHUB_OUTPUT"
 echo "::endgroup::"
 
 if [[ $EXIT_CODE -eq 2 ]]; then
-  echo "::set-output name=HAS_FINDINGS::true"
+  echo "HAS_FINDINGS=true" >> "$GITHUB_OUTPUT"
 
   # Let the jobs continue. If there were findings, the script may be breaking
   # the build in a later step. (After a potential upload to server.)
   EXIT_CODE=0
 elif [[ $EXIT_CODE -eq 0 ]]; then
-  echo "::set-output name=HAS_FINDINGS::false"
+  echo "HAS_FINDINGS=false" >> "$GITHUB_OUTPUT"
 fi
 
 # Exit code 1 is internal error of executing the step.

@@ -49,5 +49,5 @@ if [[ $EXIT_CODE -ne 0 && "$IN_IGNORE_CRASHES" == "true" ]]; then
   EXIT_CODE=0
 fi
 
-echo "::set-output name=OUTPUT_DIR::$OUTPUT_DIR"
+echo "OUTPUT_DIR=$OUTPUT_DIR" >> "$GITHUB_OUTPUT"
 exit $EXIT_CODE
