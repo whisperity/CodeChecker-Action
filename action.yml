@@ -147,7 +147,7 @@ runs:
   using: "composite"
   steps:
     - name: "Check out repository ${{ inputs.repository }}"
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       if: ${{ inputs.install-custom == 'true' }}
       with:
         path: CodeChecker

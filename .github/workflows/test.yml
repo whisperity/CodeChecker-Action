@@ -19,22 +19,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-18.04
+          - os: ubuntu-22.04
             # Install a tag from GitHub.
             install-custom: true
             version: v6.16.0
-            llvm-version: '12'
-          - os: ubuntu-20.04
+            llvm-version: '13'
+          - os: ubuntu-22.04
             # Install a specific package from PyPI.
             install-custom: false
             version: 6.17.0
-            llvm-version: '13'
-          - os: ubuntu-20.04
+            llvm-version: '14'
+          - os: ubuntu-22.04
             # Install a branch from GitHub.
             install-custom: true
             version: master
             llvm-version: 'latest'
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             # Install the latest package from PyPI.
             install-custom: false
             version: master
@@ -42,7 +42,7 @@ jobs:
     name: "Fetch: ${{ matrix.os }}, LLVM ${{ matrix.llvm-version }}, ${{ matrix.install-custom && 'repository' || 'pip' }} ${{ matrix.version }}"
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./
         id: codechecker
         with:
@@ -61,10 +61,10 @@ jobs:
         analyze-output: ['', 'my-output-dir']
 
     name: "Simple analysis: ${{ matrix.logfile && 'logfile' || 'no logfile' }}, ${{ matrix.build-command && 'build-command' || 'no build-command' }}, ${{ matrix.analyze-output && 'analyze-output' || 'no analyze-output'}}"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: test/fix_compile_json_paths.sh
       - uses: ./
         id: codechecker
@@ -82,9 +82,9 @@ jobs:
 
   analyze-cfg:
     name: "Analyze: Custom configuration"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: test/fix_compile_json_paths.sh
       - uses: ./
         with:
@@ -93,9 +93,9 @@ jobs:
           logfile: 'test/simple/compile_commands.json'
   analyze-ctu:
     name: "Analyze: CTU shortcut"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: test/fix_compile_json_paths.sh
       - uses: ./
         id: codechecker
@@ -108,9 +108,9 @@ jobs:
 
   report-converter:
     name: "Report converter: PyLint"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: "Install PyLint"
         run: |
           sudo apt-get install -y pylint
@@ -131,9 +131,9 @@ jobs:
 
   reports-errors:
     name: "Parse: Findings are reported"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: test/fix_compile_json_paths.sh
       - uses: ./
         id: codechecker
@@ -148,15 +148,15 @@ jobs:
 
   parse-html:
     name: "Parse: Generate and upload report HTML artefact"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: test/fix_compile_json_paths.sh
       - uses: ./
         id: codechecker
         with:
           logfile: 'test/simple/compile_commands.json'
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: "Parse HTML test results"
           path: ${{ steps.codechecker.outputs.result-html-dir }}
@@ -164,11 +164,11 @@ jobs:
 
   store:
     name: "Store: Authenticated local store of single result"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       CODECHECKER_VERSION: '6.18.1'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       # Need to do this manually because the server for this test has to have
       # authentication on, with a known username and password.
       - name: "Set up CodeChecker server"
@@ -240,12 +240,12 @@ jobs:
         run: exit 1
   store-production:
     name: "Store: Store to a real server"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: ${{ github.event_name == 'push' }}
     env:
       CODECHECKER_VERSION: '6.19.1'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: test/fix_compile_json_paths.sh
       - uses: ./
         id: codechecker
@@ -262,7 +262,7 @@ jobs:
 
   diff:
     name: "Diff: New findings are discovered and reported"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       CODECHECKER_VERSION: '6.19.1'
     # This time, we do not need authentication, so test with the official Docker subsystem.
@@ -272,7 +272,7 @@ jobs:
         ports:
           - 8001:8001/tcp
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       # Need to do this manually because the server for this test has to have
       # authentication on, with a known username and password.
       - name: "Wait for CodeChecker server service to go live"
@@ -308,7 +308,7 @@ jobs:
 
           diff: true
           diff-url: 'http://0.0.0.0:8001/Default'
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: ${{ steps.codechecker-diff.outputs.warnings-in-diff == 'true' }}
         with:
           name: "Diff HTML test results"
