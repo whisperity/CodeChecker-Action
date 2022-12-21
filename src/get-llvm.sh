@@ -3,6 +3,7 @@ set -e
 if [[ ! -z "$CODECHECKER_ACTION_DEBUG" ]]; then
   set -x
 fi
+set -u
 
 echo "::group::Installing LLVM"
 

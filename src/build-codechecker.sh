@@ -1,6 +1,5 @@
 #!/bin/bash
-set -e
-
+set -eo pipefail
 if [[ ! -z "$CODECHECKER_ACTION_DEBUG" ]]; then
   set -x
 fi
