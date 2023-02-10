@@ -15,7 +15,7 @@ if [[ -z "$RAW_RESULT_DIR" ]]; then
 fi
 
 OUTPUT_DIR="$RAW_RESULT_DIR"_HTML
-OUTPUT_LOG="$(dirname "$RAW_RESULT_DIR")"/"$(basename "$RAW_RESULT_DIR")_Diff.log"
+OUTPUT_LOG="$(dirname "$RAW_RESULT_DIR")"/"$(basename "$RAW_RESULT_DIR")_Parse.log"
 mkdir -pv "$(dirname "$OUTPUT_DIR")"
 
 if [[ ! -z "$IN_CONFIGFILE" ]]; then
@@ -31,6 +31,7 @@ echo "::group::Generating HTML results from analysis"
   --export "html" \
   --output "$OUTPUT_DIR" \
   --trim-path-prefix "$PROJECT_PATH" \
+  $CONFIG_FLAG_1 $CONFIG_FLAG_2 \
   || true
 echo "HTML_DIR=$OUTPUT_DIR" >> "$GITHUB_OUTPUT"
 echo "::endgroup::"
@@ -39,6 +40,7 @@ echo "::group::Printing analysis results to log"
 "$CODECHECKER_PATH"/CodeChecker parse \
   "$RAW_RESULT_DIR" \
   --trim-path-prefix "$PROJECT_PATH" \
+  $CONFIG_FLAG_1 $CONFIG_FLAG_2 \
   > "$OUTPUT_LOG"
 EXIT_CODE=$?
 
