@@ -43,7 +43,7 @@ job:
   steps:
     # Check YOUR project out!
     - name: "Check out repository"
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     # Prepare a build
     - name: "Prepare build"
@@ -79,7 +79,7 @@ job:
   steps:
     # Check YOUR project out!
     - name: "Check out repository"
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     # Prepare a build
     - name: "Prepare build"
@@ -114,7 +114,7 @@ job:
   steps:
     # Check YOUR project out!
     - name: "Check out repository"
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     # Prepare a build
     - name: "Prepare build"
@@ -156,7 +156,7 @@ job:
   steps:
     # Check YOUR project out!
     - name: "Check out repository"
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     # Prepare a build
     - name: "Prepare build"
@@ -194,7 +194,7 @@ runs:
     # automatically downloads the "after-merge" state of the pull request if
     # there are no conflicts.)
     - name: "Check out repository"
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     # Prepare a build
     - name: "Prepare build"
@@ -262,7 +262,7 @@ job:
   steps:
     # Check YOUR project out!
     - name: "Check out repository"
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     # Perform the analysis. Details vary between analysers!
     # Example for "PyLint" added below!
