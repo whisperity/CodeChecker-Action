@@ -7,8 +7,8 @@ set -u
 
 echo "::group::Installing LLVM"
 
-update-alternatives --query clang
-update-alternatives --query clang-tidy
+update-alternatives --query clang || echo "No clang installed. Continuing…"
+update-alternatives --query clang-tidy || echo "No clang-tidy installed. Continuing…"
 
 export DISTRO_FANCYNAME="$(lsb_release -c | awk '{ print $2 }')"
 curl -sL http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -

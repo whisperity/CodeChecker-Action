@@ -46,6 +46,12 @@ inputs:
     description: 'If set to "true", the "analyze" action will ALWAYS pass, and not report a failure if some analysis jobs fail to execute due to internal crashes in the Clang analysers.'
     required: true
     default: 'true'
+  analyzer-config:
+    description: "Same as CodeChecker's `--analyzer-config`. E.g.: `cppcheck:cc-verbatim-args-file=cppcheck_args.txt`"
+    required: false
+  skipfile:
+    description: "A file contianing which files to skip during analysis. Same as CodeChecker's `--skipfile` argument."
+    required: false
 
   report-converter:
     description: 'Whether to perform report conversion from analyses executed by third-party analysers instead of driving the analysis via CodeChecker directly.'
@@ -160,7 +166,7 @@ runs:
       env:
         IN_LLVM_VERSION: ${{ inputs.llvm-version }}
       shell: bash
-      run: ${{ github.action_path }}/src/get-llvm.sh
+      run: ${GITHUB_ACTION_PATH}/src/get-llvm.sh
 
     - name: "Build and Package CodeChecker"
       id: codechecker
@@ -177,9 +183,9 @@ runs:
         fi
 
         if [[ "$IN_INSTALL_CUSTOM" == "true" ]]; then
-          ${{ github.action_path }}/src/build-codechecker.sh
+          ${GITHUB_ACTION_PATH}/src/build-codechecker.sh
         else
-          ${{ github.action_path }}/src/pip-codechecker.sh
+          ${GITHUB_ACTION_PATH}/src/pip-codechecker.sh
         fi
 
     - name: "Prepare JSON Compilation Database"
@@ -194,7 +200,7 @@ runs:
 
         OUT_FILE: ${{ github.workspace }}/${{ github.action }}_codechecker_compilation_database.json
       shell: bash
-      run: ${{ github.action_path }}/src/get-or-create-build-json.sh
+      run: ${GITHUB_ACTION_PATH}/src/get-or-create-build-json.sh
 
     - name: "Execute static analysis for C/C++"
       id: analyze
@@ -206,10 +212,12 @@ runs:
 
         IN_CONFIGFILE: ${{ inputs.config }}
         IN_CTU: ${{ inputs.ctu }}
+        IN_ANALYZER_CONFIG: ${{ inputs.analyzer-config }}
+        IN_SKIPFILE: ${{ inputs.skipfile }}
         IN_IGNORE_CRASHES: ${{ inputs.ignore-analyze-crashes }}
         IN_OUTPUT_DIR: ${{ inputs.analyze-output }}
       shell: bash
-      run: ${{ github.action_path }}/src/execute-analysis.sh
+      run: ${GITHUB_ACTION_PATH}/src/execute-analysis.sh
 
     - name: "Perform report-converter"
       id: report-convert
@@ -223,7 +231,7 @@ runs:
         IN_IGNORE_CRASHES: ${{ inputs.ignore-analyze-crashes }}
         IN_OUTPUT_DIR: ${{ inputs.analyze-output }}
       shell: bash
-      run: ${{ github.action_path }}/src/report-converter.sh
+      run: ${GITHUB_ACTION_PATH}/src/report-converter.sh
 
     # This step is needed because it is forbidden to reuse the 'id' of a step,
     # even if the two steps taking the same 'id' are mutually exclusive.
@@ -254,7 +262,7 @@ runs:
 
         IN_CONFIGFILE: ${{ inputs.config }}
       shell: bash
-      run: ${{ github.action_path }}/src/parse-results.sh
+      run: ${GITHUB_ACTION_PATH}/src/parse-results.sh
 
     - name: "Generate the configuration for diffing current results against previously stored"
       id: diff-pre
@@ -271,7 +279,7 @@ runs:
         GITHUB_REF_NAME: ${{ github.ref_name }}
         GITHUB_REF_TYPE: ${{ github.ref_type }}
       shell: bash
-      run: ${{ github.action_path }}/src/diff-pre.sh
+      run: ${GITHUB_ACTION_PATH}/src/diff-pre.sh
 
     - name: "Diff current results against previously stored run"
       id: diff
@@ -285,7 +293,7 @@ runs:
         IN_CONFIGFILE: ${{ inputs.config }}
         IN_DIFF_URL: ${{ inputs.diff-url }}
       shell: bash
-      run: ${{ github.action_path }}/src/diff.sh
+      run: ${GITHUB_ACTION_PATH}/src/diff.sh
 
     - name: "Generate the configuration for uploading results"
       id: store-pre
@@ -301,7 +309,7 @@ runs:
         GITHUB_REF_TYPE: ${{ github.ref_type }}
         GITHUB_SHA: ${{ github.sha }}
       shell: bash
-      run: ${{ github.action_path }}/src/store-pre.sh
+      run: ${GITHUB_ACTION_PATH}/src/store-pre.sh
 
     - name: "Store analysis results to server"
       id: store
@@ -316,4 +324,4 @@ runs:
         IN_CONFIGFILE: ${{ inputs.config }}
         IN_STORE_URL: ${{ inputs.store-url }}
       shell: bash
-      run: ${{ github.action_path }}/src/store.sh
+      run: ${GITHUB_ACTION_PATH}/src/store.sh

@@ -10,7 +10,7 @@ fi
 
 if [[ ! -z "$IN_DIFF_USERNAME" && ! -z "$IN_DIFF_PASSWORD" ]]; then
   echo "Configuring credentials..."
-  cat <<EOF > ~/.codechecker.passwords.json
+  cat <<EOF > /.codechecker.passwords.json
     {
       "client_autologin": true,
       "credentials": {
@@ -18,7 +18,7 @@ if [[ ! -z "$IN_DIFF_USERNAME" && ! -z "$IN_DIFF_PASSWORD" ]]; then
       }
     }
 EOF
-  chmod 0600 ~/.codechecker.passwords.json
+  chmod 0600 /.codechecker.passwords.json
 fi
 
 if [[ ! -z "$IN_DIFF_RUN_NAME" && "$IN_DIFF_RUN_NAME" != "__DEFAULT__" ]]; then

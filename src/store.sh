@@ -35,6 +35,7 @@ if [[ ! -z "$CODECHECKER_STORE_RUN_TAG" ]]; then
   RUN_TAG_FLAG_1="--tag"
   RUN_TAG_FLAG_2=$CODECHECKER_STORE_RUN_TAG
 fi
+export CC_PASS_FILE=/.codechecker.passwords.json
 echo "::endgroup::"
 
 echo "::group::Storing results to server"

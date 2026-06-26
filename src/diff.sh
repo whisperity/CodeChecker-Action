@@ -28,6 +28,7 @@ fi
 OUTPUT_DIR="$RAW_RESULT_DIR"_DiffHTML
 OUTPUT_LOG="$(dirname "$RAW_RESULT_DIR")"/"$(basename "$RAW_RESULT_DIR")_Diff.log"
 mkdir -pv "$(dirname "$OUTPUT_DIR")"
+export CC_PASS_FILE=/.codechecker.passwords.json
 echo "::endgroup::"
 
 echo "::group::Generating HTML results from diff"
