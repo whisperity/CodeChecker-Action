@@ -13,7 +13,8 @@ if [[ "$IN_VERSION" == "master" ]]; then
 
   # Hack to get pip list us which versions are available...
   # (thanks, http://stackoverflow.com/a/26664162)
-  pip3 install codechecker=="You_cant_be_serious_mate" 2>&1  \
+  # TODO: move to 'pip index versions codechecker' in the future
+  pip3 install codechecker=="9999.9999.9999" 2>&1  \
     | grep "ERROR: Could not find a version"                 \
     | sed 's/^.*(from versions: \(.*\))/\1/'                 \
     | sed 's/, /\n/g'                                        \

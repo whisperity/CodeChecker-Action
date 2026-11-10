@@ -11,14 +11,17 @@ update-alternatives --query clang
 update-alternatives --query clang-tidy
 
 export DISTRO_FANCYNAME="$(lsb_release -c | awk '{ print $2 }')"
-curl -sL http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+sudo mkdir -p /etc/apt/keyrings/
+curl -sL http://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/llvm.gpg
 
 if [[ "$IN_LLVM_VERSION" == "latest" ]]; then
-  sudo add-apt-repository -y "deb http://apt.llvm.org/$DISTRO_FANCYNAME/ llvm-toolchain-$DISTRO_FANCYNAME main"
+  echo "deb [signed-by=/etc/apt/keyrings/llvm.gpg] http://apt.llvm.org/$DISTRO_FANCYNAME/ llvm-toolchain-$DISTRO_FANCYNAME main" | sudo tee /etc/apt/sources.list.d/llvm.list
+  sudo apt-get update
   # Get the largest Clang package number available.
   export LLVM_VER="$(apt-cache search --full 'clang-[[:digit:]]*$' | grep '^Package: clang' | cut -d ' ' -f 2 | sort -V | tail -n 1 | sed 's/clang-//')"
 else
-  sudo add-apt-repository -y "deb http://apt.llvm.org/$DISTRO_FANCYNAME/ llvm-toolchain-$DISTRO_FANCYNAME-$IN_LLVM_VERSION main"
+  echo "deb [signed-by=/etc/apt/keyrings/llvm.gpg] http://apt.llvm.org/$DISTRO_FANCYNAME/ llvm-toolchain-$DISTRO_FANCYNAME-$IN_LLVM_VERSION main" | sudo tee /etc/apt/sources.list.d/llvm.list
+  sudo apt-get update
   export LLVM_VER="$IN_LLVM_VERSION"
 fi
 
